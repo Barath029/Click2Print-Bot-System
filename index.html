@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartPrint™ | Automated Campus Print Queue, Split Escrow & 50-Slot Rack Logistics</title>
+  <meta name="description" content="Institutional print queue automation, 7%/93% split-revenue escrow, and contactless FIFO express-pickup rack logistics for collegiate campus hubs. Built with TypeScript and Node.js.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+
+  <!-- Top Navigation & Role Command Bar (Mounted by HeaderComponent) -->
+  <header class="smartprint-header" id="appHeader"></header>
+
+  <!-- Global Real-Time Telemetry & Context HUD (Mounted by TelemetryHUDComponent) -->
+  <div class="telemetry-hud-wrapper" id="appTelemetryHUD"></div>
+
+  <!-- Main Multi-Perspective Views Container -->
+  <main class="main-content-wrapper">
+    <!-- View 1: Student Order Studio -->
+    <section id="studentSection" class="view-panel active"></section>
+
+    <!-- View 2: Vendor Logistics & FIFO Kanban -->
+    <section id="vendorSection" class="view-panel"></section>
+
+    <!-- View 3: 50-Slot Modular Physical Shelving Matrix -->
+    <section id="rackSection" class="view-panel"></section>
+
+    <!-- View 4: 15-Second Express Contactless Kiosk -->
+    <section id="kioskSection" class="view-panel"></section>
+
+    <!-- View 5: Master Platform Admin & Automated Escrow Ledger -->
+    <section id="adminSection" class="view-panel"></section>
+
+    <!-- View 6: Interactive System Architecture & Context Explorer -->
+    <section id="architectureSection" class="view-panel"></section>
+  </main>
+
+  <!-- ==========================================================================
+       Modals Container
+       ========================================================================== -->
+  <!-- UPI Payment Modal -->
+  <div id="paymentModal" class="modal-overlay">
+    <div class="cyber-modal-card">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="modal-icon">💳</span>
+          <h3 class="modal-title">Instant UPI Split-Payment</h3>
+        </div>
+        <button class="modal-close-btn" type="button" aria-label="Close modal">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="payment-amount-box">
+          <div class="amt-label">TOTAL AMOUNT PAYABLE</div>
+          <div class="amt-value" id="modalPayAmount">₹86.00</div>
+          
+          <div class="modal-split-pill">
+            <span>Vendor: <strong class="color-emerald" id="modalVendorSplit">₹79.98</strong></span>
+            <span>•</span>
+            <span>Escrow (7%): <strong class="color-indigo" id="modalPlatformSplit">₹6.02</strong></span>
+          </div>
+        </div>
+
+        <!-- Realistic QR Code -->
+        <div class="upi-qr-display-box">
+          <svg width="150" height="150" viewBox="0 0 100 100" fill="none">
+            <rect width="100" height="100" fill="white" rx="8"/>
+            <rect x="5" y="5" width="30" height="30" fill="#0b0f19"/>
+            <rect x="10" y="10" width="20" height="20" fill="white"/>
+            <rect x="15" y="15" width="10" height="10" fill="#0b0f19"/>
+            <rect x="65" y="5" width="30" height="30" fill="#0b0f19"/>
+            <rect x="70" y="10" width="20" height="20" fill="white"/>
+            <rect x="75" y="15" width="10" height="10" fill="#0b0f19"/>
+            <rect x="5" y="65" width="30" height="30" fill="#0b0f19"/>
+            <rect x="10" y="70" width="20" height="20" fill="white"/>
+            <rect x="15" y="75" width="10" height="10" fill="#0b0f19"/>
+            <rect x="45" y="10" width="10" height="10" fill="#0b0f19"/>
+            <rect x="45" y="30" width="10" height="20" fill="#0b0f19"/>
+            <rect x="65" y="45" width="15" height="10" fill="#0b0f19"/>
+            <rect x="45" y="65" width="10" height="25" fill="#0b0f19"/>
+            <rect x="65" y="65" width="25" height="10" fill="#0b0f19"/>
+            <rect x="80" y="80" width="15" height="15" fill="#0b0f19"/>
+          </svg>
+          <div class="qr-upi-caption">Scan with PhonePe, Google Pay, or Paytm</div>
+        </div>
+
+        <button class="cyber-btn-primary full-width" id="btnSimulatePayment" type="button">
+          Simulate Instant UPI Payment & Place Order
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Print Manifest Cover Slip Modal -->
+  <div id="manifestModal" class="modal-overlay">
+    <div class="cyber-modal-card manifest-card">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="modal-icon">📄</span>
+          <h3 class="modal-title">Institutional Print Manifest Cover Slip</h3>
+        </div>
+        <button class="modal-close-btn" type="button" aria-label="Close modal">✕</button>
+      </div>
+      <div class="modal-body" id="manifestModalBody">
+        <!-- Dynamically rendered -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Rack Slot Details Modal -->
+  <div id="slotDetailsModal" class="modal-overlay">
+    <div class="cyber-modal-card">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="modal-icon">📦</span>
+          <h3 class="modal-title">Staging Shelf Compartment Inspector</h3>
+        </div>
+        <button class="modal-close-btn" type="button" aria-label="Close modal">✕</button>
+      </div>
+      <div class="modal-body" id="slotModalBody">
+        <!-- Dynamically rendered -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Toast Notification Container -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <!-- Compiled TypeScript ES2022 Standard Module Entry Point -->
+  <script type="module" src="dist/main.js"></script>
+</body>
+</html>

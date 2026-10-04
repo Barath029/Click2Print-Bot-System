@@ -1,0 +1,24 @@
+{
+  "name": "smartprint-automation-system",
+  "version": "1.0.0",
+  "description": "SmartPrint: Institutional Print Queue Automation & Rack Logistics System",
+  "main": "server.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "dev": "tsc && node server.js",
+    "start": "node server.js"
+  },
+  "keywords": [
+    "smartprint",
+    "print-queue",
+    "rack-logistics",
+    "campus-xerox",
+    "split-payments"
+  ],
+  "author": "SmartPrint Team",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}
