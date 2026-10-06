@@ -3,52 +3,38 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SmartPrint™ | Automated Campus Print Queue, Split Escrow & 50-Slot Rack Logistics</title>
-  <meta name="description" content="Institutional print queue automation, 7%/93% split-revenue escrow, and contactless FIFO express-pickup rack logistics for collegiate campus hubs. Built with TypeScript and Node.js.">
+  <title>Click2Print™ | Instant Counter & Campus Print Cloud (<60s Automated Printing)</title>
+  <meta name="description" content="Instant shop print automation: scan shop QR code, upload document, auto-detect B&W/colour, one-click approve & print, and automatic privacy file purge in under 60 seconds. Built with TypeScript.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles/main.css">
 </head>
 <body>
 
-  <!-- Top Navigation & Role Command Bar (Mounted by HeaderComponent) -->
-  <header class="smartprint-header" id="appHeader"></header>
+  <!-- Top Navigation & Role Bar (Mounted by HeaderComponent) -->
+  <header class="c2p-header" id="appHeader"></header>
 
-  <!-- Global Real-Time Telemetry & Context HUD (Mounted by TelemetryHUDComponent) -->
-  <div class="telemetry-hud-wrapper" id="appTelemetryHUD"></div>
-
-  <!-- Main Multi-Perspective Views Container -->
+  <!-- Main Application Container -->
   <main class="main-content-wrapper">
-    <!-- View 1: Student Order Studio -->
-    <section id="studentSection" class="view-panel active"></section>
+    <!-- View 1: Customer Scan & Print Portal (Image 3: Scan QR -> Upload -> Options -> Pay) -->
+    <section id="customerSection" class="view-panel active"></section>
 
-    <!-- View 2: Vendor Logistics & FIFO Kanban -->
-    <section id="vendorSection" class="view-panel"></section>
-
-    <!-- View 3: 50-Slot Modular Physical Shelving Matrix -->
-    <section id="rackSection" class="view-panel"></section>
-
-    <!-- View 4: 15-Second Express Contactless Kiosk -->
-    <section id="kioskSection" class="view-panel"></section>
-
-    <!-- View 5: Master Platform Admin & Automated Escrow Ledger -->
+    <!-- View 2: Shop Owner / Admin Dashboard (Images 1, 2, 4) -->
     <section id="adminSection" class="view-panel"></section>
-
-    <!-- View 6: Interactive System Architecture & Context Explorer -->
-    <section id="architectureSection" class="view-panel"></section>
   </main>
 
   <!-- ==========================================================================
-       Modals Container
+       MODALS
        ========================================================================== -->
-  <!-- UPI Payment Modal -->
+  
+  <!-- Modal 1: Razorpay Instant UPI Modal (Image 4) -->
   <div id="paymentModal" class="modal-overlay">
-    <div class="cyber-modal-card">
+    <div class="c2p-modal-card">
       <div class="modal-header">
         <div class="modal-title-wrap">
           <span class="modal-icon">💳</span>
-          <h3 class="modal-title">Instant UPI Split-Payment</h3>
+          <h3 class="modal-title">Razorpay Instant UPI Checkout</h3>
         </div>
         <button class="modal-close-btn" type="button" aria-label="Close modal">✕</button>
       </div>
@@ -56,73 +42,80 @@
       <div class="modal-body">
         <div class="payment-amount-box">
           <div class="amt-label">TOTAL AMOUNT PAYABLE</div>
-          <div class="amt-value" id="modalPayAmount">₹86.00</div>
-          
-          <div class="modal-split-pill">
-            <span>Vendor: <strong class="color-emerald" id="modalVendorSplit">₹79.98</strong></span>
-            <span>•</span>
-            <span>Escrow (7%): <strong class="color-indigo" id="modalPlatformSplit">₹6.02</strong></span>
+          <div class="amt-value" id="modalPayAmount">₹34.00</div>
+          <div class="amt-note">Instant Online Payment • No extra fee</div>
+        </div>
+
+        <!-- Realistic Dynamic UPI QR Code -->
+        <div class="upi-qr-display-box">
+          <div class="upi-qr-frame">
+            <svg width="170" height="170" viewBox="0 0 100 100" fill="none">
+              <rect width="100" height="100" fill="white" rx="8"/>
+              <rect x="6" y="6" width="28" height="28" fill="#1e1b4b"/>
+              <rect x="11" y="11" width="18" height="18" fill="white"/>
+              <rect x="15" y="15" width="10" height="10" fill="#1e1b4b"/>
+              <rect x="66" y="6" width="28" height="28" fill="#1e1b4b"/>
+              <rect x="71" y="11" width="18" height="18" fill="white"/>
+              <rect x="75" y="15" width="10" height="10" fill="#1e1b4b"/>
+              <rect x="6" y="66" width="28" height="28" fill="#1e1b4b"/>
+              <rect x="11" y="71" width="18" height="18" fill="white"/>
+              <rect x="15" y="75" width="10" height="10" fill="#1e1b4b"/>
+              <rect x="42" y="10" width="10" height="18" fill="#1e1b4b"/>
+              <rect x="42" y="34" width="12" height="18" fill="#1e1b4b"/>
+              <rect x="60" y="44" width="16" height="12" fill="#1e1b4b"/>
+              <rect x="42" y="64" width="12" height="24" fill="#1e1b4b"/>
+              <rect x="64" y="64" width="24" height="12" fill="#1e1b4b"/>
+              <rect x="76" y="76" width="14" height="14" fill="#1e1b4b"/>
+            </svg>
+          </div>
+          <div class="qr-upi-caption">Scan with PhonePe, Google Pay, or Paytm</div>
+          <div class="upi-apps-icons">
+            <span class="upi-badge">GPay</span>
+            <span class="upi-badge">PhonePe</span>
+            <span class="upi-badge">Paytm</span>
+            <span class="upi-badge">BHIM</span>
           </div>
         </div>
 
-        <!-- Realistic QR Code -->
-        <div class="upi-qr-display-box">
-          <svg width="150" height="150" viewBox="0 0 100 100" fill="none">
-            <rect width="100" height="100" fill="white" rx="8"/>
-            <rect x="5" y="5" width="30" height="30" fill="#0b0f19"/>
-            <rect x="10" y="10" width="20" height="20" fill="white"/>
-            <rect x="15" y="15" width="10" height="10" fill="#0b0f19"/>
-            <rect x="65" y="5" width="30" height="30" fill="#0b0f19"/>
-            <rect x="70" y="10" width="20" height="20" fill="white"/>
-            <rect x="75" y="15" width="10" height="10" fill="#0b0f19"/>
-            <rect x="5" y="65" width="30" height="30" fill="#0b0f19"/>
-            <rect x="10" y="70" width="20" height="20" fill="white"/>
-            <rect x="15" y="75" width="10" height="10" fill="#0b0f19"/>
-            <rect x="45" y="10" width="10" height="10" fill="#0b0f19"/>
-            <rect x="45" y="30" width="10" height="20" fill="#0b0f19"/>
-            <rect x="65" y="45" width="15" height="10" fill="#0b0f19"/>
-            <rect x="45" y="65" width="10" height="25" fill="#0b0f19"/>
-            <rect x="65" y="65" width="25" height="10" fill="#0b0f19"/>
-            <rect x="80" y="80" width="15" height="15" fill="#0b0f19"/>
-          </svg>
-          <div class="qr-upi-caption">Scan with PhonePe, Google Pay, or Paytm</div>
-        </div>
-
-        <button class="cyber-btn-primary full-width" id="btnSimulatePayment" type="button">
+        <button class="btn-primary-action full-width" id="btnSimulatePayment" type="button">
           Simulate Instant UPI Payment & Place Order
         </button>
+
+        <div class="privacy-note-modal">
+          <span>🔒 100% Secure • File will be auto-deleted immediately upon printing</span>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Print Manifest Cover Slip Modal -->
-  <div id="manifestModal" class="modal-overlay">
-    <div class="cyber-modal-card manifest-card">
+  <!-- Modal 2: Print Your Shop QR Poster (Image 1) -->
+  <div id="shopQrModal" class="modal-overlay">
+    <div class="c2p-modal-card large-modal">
       <div class="modal-header">
         <div class="modal-title-wrap">
-          <span class="modal-icon">📄</span>
-          <h3 class="modal-title">Institutional Print Manifest Cover Slip</h3>
+          <span class="modal-icon">🔲</span>
+          <h3 class="modal-title">Print Shop Counter QR Code Poster (A4)</h3>
         </div>
         <button class="modal-close-btn" type="button" aria-label="Close modal">✕</button>
       </div>
-      <div class="modal-body" id="manifestModalBody">
-        <!-- Dynamically rendered -->
+      <div class="modal-body" id="shopQrModalBody">
+        <!-- Rendered by ModalsComponent -->
       </div>
     </div>
   </div>
 
-  <!-- Rack Slot Details Modal -->
-  <div id="slotDetailsModal" class="modal-overlay">
-    <div class="cyber-modal-card">
+  <!-- Modal 3: Hardware Test Print Diagnostic Slip (Image 1) -->
+  <div id="testPrintModal" class="modal-overlay">
+    <div class="c2p-modal-card">
       <div class="modal-header">
         <div class="modal-title-wrap">
-          <span class="modal-icon">📦</span>
-          <h3 class="modal-title">Staging Shelf Compartment Inspector</h3>
+          <span class="modal-icon">🧪</span>
+          <h3 class="modal-title">Hardware Test Print Diagnostic Verification</h3>
         </div>
         <button class="modal-close-btn" type="button" aria-label="Close modal">✕</button>
       </div>
-      <div class="modal-body" id="slotModalBody">
-        <!-- Dynamically rendered -->
+      <div class="modal-body" id="testPrintModalBody">
+        <!-- Rendered by ModalsComponent -->
       </div>
     </div>
   </div>

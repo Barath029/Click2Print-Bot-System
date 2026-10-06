@@ -6,94 +6,61 @@
  * 3. Transparent Cost Calculation & Razorpay UPI Payment
  * 4. Real-time Order Tracker with Auto-Delete Privacy Guarantee
  */
-
 import { store } from '../core/store.js';
 import { pricingEngine } from '../services/pricingEngine.js';
 import { colorAnalyzer } from '../services/colorAnalyzer.js';
 import { sound } from '../core/audio.js';
-import {
-  SystemState,
-  OrderDraft,
-  ColorMode,
-  PaperGrade,
-  PaperFormat,
-  BindingType,
-  PaymentMethod,
-  PrintOrder
-} from '../types/index.js';
-
 export class CustomerOrderComponent {
-  private container: HTMLElement;
-
-  private currentDraft: OrderDraft = {
-    fileName: 'Project_Final_Submission.docx',
-    fileType: 'docx',
-    isDocxConverted: true,
-    fileSizeKb: 3420,
-    pageCount: 16,
-    rangeMode: 'all',
-    fromPage: 1,
-    toPage: 16,
-    pageRange: 'All Pages (1-16)',
-    bwPages: 14,
-    colorPages: 2,
-    colorMode: 'smart',
-    duplex: true,
-    copies: 1,
-    paper: 'gsm75',
-    paperFormat: 'A4',
-    binding: 'none',
-    customerNotes: '',
-    customer: {
-      name: 'Ravi Teja',
-      phone: '+91 98402 88419',
-      email: 'ravi@example.com'
-    },
-    paymentMethod: 'RAZORPAY_UPI'
-  };
-
-  private isConvertingDocx: boolean = false;
-
-  constructor(container: HTMLElement) {
-    this.container = container;
-    this.render(store.getState());
-    store.subscribe((state) => this.update(state));
-  }
-
-  private getEffectivePageCount(): number {
-    if (this.currentDraft.rangeMode === 'custom') {
-      const from = Math.max(1, this.currentDraft.fromPage || 1);
-      const to = Math.min(this.currentDraft.pageCount, Math.max(from, this.currentDraft.toPage || this.currentDraft.pageCount));
-      return (to - from) + 1;
+    container;
+    currentDraft = {
+        fileName: 'Project_Final_Submission.docx',
+        fileType: 'docx',
+        isDocxConverted: true,
+        fileSizeKb: 3420,
+        pageCount: 16,
+        rangeMode: 'all',
+        fromPage: 1,
+        toPage: 16,
+        pageRange: 'All Pages (1-16)',
+        bwPages: 14,
+        colorPages: 2,
+        colorMode: 'smart',
+        duplex: true,
+        copies: 1,
+        paper: 'gsm75',
+        paperFormat: 'A4',
+        binding: 'none',
+        customerNotes: '',
+        customer: {
+            name: 'Ravi Teja',
+            phone: '+91 98402 88419',
+            email: 'ravi@example.com'
+        },
+        paymentMethod: 'RAZORPAY_UPI'
+    };
+    isConvertingDocx = false;
+    constructor(container) {
+        this.container = container;
+        this.render(store.getState());
+        store.subscribe((state) => this.update(state));
     }
-    return this.currentDraft.pageCount;
-  }
-
-  private render(state: SystemState): void {
-    const effectivePages = this.getEffectivePageCount();
-    const analysis = colorAnalyzer.analyzeDocument(this.currentDraft.fileName, effectivePages);
-    this.currentDraft.colorPages = analysis.colorPagesCount;
-    this.currentDraft.bwPages = analysis.bwPagesCount;
-
-    const quote = pricingEngine.calculate(
-      effectivePages,
-      this.currentDraft.colorPages,
-      this.currentDraft.bwPages,
-      this.currentDraft.colorMode,
-      this.currentDraft.duplex,
-      this.currentDraft.copies,
-      this.currentDraft.paper,
-      this.currentDraft.paperFormat,
-      this.currentDraft.binding,
-      state.pricing
-    );
-
-    // Active customer order for live tracking
-    const activeOrder: PrintOrder | undefined = state.orders.find(
-      o => o.id === state.activeCustomerOrderId
-    ) || state.orders[0];
-
-    this.container.innerHTML = `
+    getEffectivePageCount() {
+        if (this.currentDraft.rangeMode === 'custom') {
+            const from = Math.max(1, this.currentDraft.fromPage || 1);
+            const to = Math.min(this.currentDraft.pageCount, Math.max(from, this.currentDraft.toPage || this.currentDraft.pageCount));
+            return (to - from) + 1;
+        }
+        return this.currentDraft.pageCount;
+    }
+    render(state) {
+        const effectivePages = this.getEffectivePageCount();
+        const analysis = colorAnalyzer.analyzeDocument(this.currentDraft.fileName, effectivePages);
+        this.currentDraft.colorPages = analysis.colorPagesCount;
+        this.currentDraft.bwPages = analysis.bwPagesCount;
+        const quote = pricingEngine.calculate(effectivePages, this.currentDraft.colorPages, this.currentDraft.bwPages, this.currentDraft.colorMode, this.currentDraft.duplex, this.currentDraft.copies, this.currentDraft.paper, this.currentDraft.paperFormat, this.currentDraft.binding, state.pricing);
+        // Active customer order for live tracking
+        const activeOrder = state.orders.find(o => o.id === state.activeCustomerOrderId) || state.orders[0];
+        this.container.innerHTML = `
       <div class="customer-portal-view">
 
         <!-- Top Welcome & Shop Station Strip -->
@@ -572,257 +539,227 @@ export class CustomerOrderComponent {
 
       </div>
     `;
-
-    this.bindEvents(state);
-  }
-
-  private bindEvents(state: SystemState): void {
-    const fileInput = this.container.querySelector('#customerFileInput') as HTMLInputElement;
-    const dropzone = this.container.querySelector('#customerDropzone');
-
-    dropzone?.addEventListener('click', () => {
-      fileInput?.click();
-    });
-
-    fileInput?.addEventListener('change', (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        this.handleFileSelected(file);
-      }
-    });
-
-    // Preset sample buttons
-    this.container.querySelectorAll('.preset-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const preset = (btn as HTMLElement).dataset.preset;
-        this.applyPreset(preset || 'docx');
-      });
-    });
-
-    // Color mode radios
-    this.container.querySelectorAll('input[name="colorMode"]').forEach(radio => {
-      radio.addEventListener('change', (e) => {
-        const val = (e.target as HTMLInputElement).value as ColorMode;
-        this.currentDraft.colorMode = val;
+        this.bindEvents(state);
+    }
+    bindEvents(state) {
+        const fileInput = this.container.querySelector('#customerFileInput');
+        const dropzone = this.container.querySelector('#customerDropzone');
+        dropzone?.addEventListener('click', () => {
+            fileInput?.click();
+        });
+        fileInput?.addEventListener('change', (e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+                this.handleFileSelected(file);
+            }
+        });
+        // Preset sample buttons
+        this.container.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const preset = btn.dataset.preset;
+                this.applyPreset(preset || 'docx');
+            });
+        });
+        // Color mode radios
+        this.container.querySelectorAll('input[name="colorMode"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const val = e.target.value;
+                this.currentDraft.colorMode = val;
+                sound.click();
+                this.render(store.getState());
+            });
+        });
+        // Copies buttons
+        const btnCopiesDec = this.container.querySelector('#btnCopiesDec');
+        const btnCopiesInc = this.container.querySelector('#btnCopiesInc');
+        const txtCopies = this.container.querySelector('#txtCopies');
+        btnCopiesDec?.addEventListener('click', () => {
+            this.currentDraft.copies = Math.max(1, this.currentDraft.copies - 1);
+            sound.click();
+            this.render(store.getState());
+        });
+        btnCopiesInc?.addEventListener('click', () => {
+            this.currentDraft.copies = Math.min(100, this.currentDraft.copies + 1);
+            sound.click();
+            this.render(store.getState());
+        });
+        txtCopies?.addEventListener('change', () => {
+            this.currentDraft.copies = Math.max(1, parseInt(txtCopies.value) || 1);
+            this.render(store.getState());
+        });
+        // Duplex buttons
+        const btnSingleSided = this.container.querySelector('#btnSingleSided');
+        const btnDoubleSided = this.container.querySelector('#btnDoubleSided');
+        btnSingleSided?.addEventListener('click', () => {
+            this.currentDraft.duplex = false;
+            sound.click();
+            this.render(store.getState());
+        });
+        btnDoubleSided?.addEventListener('click', () => {
+            this.currentDraft.duplex = true;
+            sound.click();
+            this.render(store.getState());
+        });
+        // Range mode
+        this.container.querySelectorAll('input[name="rangeMode"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const val = e.target.value;
+                this.currentDraft.rangeMode = val;
+                sound.click();
+                this.render(store.getState());
+            });
+        });
+        const txtFromPage = this.container.querySelector('#txtFromPage');
+        const txtToPage = this.container.querySelector('#txtToPage');
+        txtFromPage?.addEventListener('change', () => {
+            this.currentDraft.fromPage = Math.max(1, parseInt(txtFromPage.value) || 1);
+            this.render(store.getState());
+        });
+        txtToPage?.addEventListener('change', () => {
+            this.currentDraft.toPage = Math.min(this.currentDraft.pageCount, parseInt(txtToPage.value) || this.currentDraft.pageCount);
+            this.render(store.getState());
+        });
+        // Paper Format & Grade
+        const selPaperFormat = this.container.querySelector('#selPaperFormat');
+        selPaperFormat?.addEventListener('change', () => {
+            this.currentDraft.paperFormat = selPaperFormat.value;
+            sound.click();
+            this.render(store.getState());
+        });
+        const selPaperGrade = this.container.querySelector('#selPaperGrade');
+        selPaperGrade?.addEventListener('change', () => {
+            this.currentDraft.paper = selPaperGrade.value;
+            sound.click();
+            this.render(store.getState());
+        });
+        // Binding
+        const selBinding = this.container.querySelector('#selBinding');
+        selBinding?.addEventListener('change', () => {
+            this.currentDraft.binding = selBinding.value;
+            sound.click();
+            this.render(store.getState());
+        });
+        // Customer Name & Phone
+        const txtCustName = this.container.querySelector('#txtCustName');
+        txtCustName?.addEventListener('input', () => {
+            this.currentDraft.customer.name = txtCustName.value;
+        });
+        const txtCustPhone = this.container.querySelector('#txtCustPhone');
+        txtCustPhone?.addEventListener('input', () => {
+            this.currentDraft.customer.phone = txtCustPhone.value;
+        });
+        const txtCustNotes = this.container.querySelector('#txtCustNotes');
+        txtCustNotes?.addEventListener('input', () => {
+            this.currentDraft.customerNotes = txtCustNotes.value;
+        });
+        // Payment Method
+        this.container.querySelectorAll('input[name="payMethod"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const val = e.target.value;
+                this.currentDraft.paymentMethod = val;
+                sound.click();
+                this.render(store.getState());
+            });
+        });
+        // Place Order Button
+        const btnPlaceOrder = this.container.querySelector('#btnPlaceOrder');
+        btnPlaceOrder?.addEventListener('click', () => {
+            this.handleOrderSubmission();
+        });
+    }
+    handleFileSelected(file) {
+        const isDocx = file.name.endsWith('.docx') || file.name.endsWith('.doc');
+        const isImg = file.type.startsWith('image/');
+        this.currentDraft.fileName = file.name;
+        this.currentDraft.fileSizeKb = Math.round(file.size / 1024);
+        this.currentDraft.fileType = isDocx ? 'docx' : (isImg ? 'image' : 'pdf');
+        this.currentDraft.isDocxConverted = isDocx;
+        // Simulate page detection based on size
+        if (isDocx) {
+            this.currentDraft.pageCount = Math.max(2, Math.min(60, Math.round(file.size / 150000) || 12));
+        }
+        else if (isImg) {
+            this.currentDraft.pageCount = 1;
+            this.currentDraft.colorMode = 'color';
+        }
+        else {
+            this.currentDraft.pageCount = Math.max(1, Math.min(100, Math.round(file.size / 100000) || 8));
+        }
+        this.currentDraft.fromPage = 1;
+        this.currentDraft.toPage = this.currentDraft.pageCount;
+        this.currentDraft.pageRange = `All Pages (1-${this.currentDraft.pageCount})`;
+        sound.success();
+        this.render(store.getState());
+    }
+    applyPreset(preset) {
+        if (preset === 'docx') {
+            this.currentDraft.fileName = 'Project_Final_Submission.docx';
+            this.currentDraft.fileType = 'docx';
+            this.currentDraft.isDocxConverted = true;
+            this.currentDraft.pageCount = 16;
+            this.currentDraft.colorMode = 'smart';
+            this.currentDraft.duplex = true;
+            this.currentDraft.copies = 1;
+        }
+        else if (preset === 'color') {
+            this.currentDraft.fileName = 'Marketing_Pitch_Deck.pdf';
+            this.currentDraft.fileType = 'pdf';
+            this.currentDraft.isDocxConverted = false;
+            this.currentDraft.pageCount = 12;
+            this.currentDraft.colorMode = 'color';
+            this.currentDraft.duplex = false;
+            this.currentDraft.copies = 1;
+        }
+        else if (preset === 'lab') {
+            this.currentDraft.fileName = 'Chemistry_Lab_Manual.pdf';
+            this.currentDraft.fileType = 'pdf';
+            this.currentDraft.isDocxConverted = false;
+            this.currentDraft.pageCount = 8;
+            this.currentDraft.colorMode = 'mono';
+            this.currentDraft.duplex = true;
+            this.currentDraft.copies = 1;
+        }
+        else {
+            this.currentDraft.fileName = 'Ravi_Resume_2026.pdf';
+            this.currentDraft.fileType = 'pdf';
+            this.currentDraft.isDocxConverted = false;
+            this.currentDraft.pageCount = 2;
+            this.currentDraft.colorMode = 'mono';
+            this.currentDraft.duplex = false;
+            this.currentDraft.copies = 2;
+        }
+        this.currentDraft.fromPage = 1;
+        this.currentDraft.toPage = this.currentDraft.pageCount;
+        this.currentDraft.pageRange = `All Pages (1-${this.currentDraft.pageCount})`;
         sound.click();
         this.render(store.getState());
-      });
-    });
-
-    // Copies buttons
-    const btnCopiesDec = this.container.querySelector('#btnCopiesDec');
-    const btnCopiesInc = this.container.querySelector('#btnCopiesInc');
-    const txtCopies = this.container.querySelector('#txtCopies') as HTMLInputElement;
-
-    btnCopiesDec?.addEventListener('click', () => {
-      this.currentDraft.copies = Math.max(1, this.currentDraft.copies - 1);
-      sound.click();
-      this.render(store.getState());
-    });
-
-    btnCopiesInc?.addEventListener('click', () => {
-      this.currentDraft.copies = Math.min(100, this.currentDraft.copies + 1);
-      sound.click();
-      this.render(store.getState());
-    });
-
-    txtCopies?.addEventListener('change', () => {
-      this.currentDraft.copies = Math.max(1, parseInt(txtCopies.value) || 1);
-      this.render(store.getState());
-    });
-
-    // Duplex buttons
-    const btnSingleSided = this.container.querySelector('#btnSingleSided');
-    const btnDoubleSided = this.container.querySelector('#btnDoubleSided');
-
-    btnSingleSided?.addEventListener('click', () => {
-      this.currentDraft.duplex = false;
-      sound.click();
-      this.render(store.getState());
-    });
-
-    btnDoubleSided?.addEventListener('click', () => {
-      this.currentDraft.duplex = true;
-      sound.click();
-      this.render(store.getState());
-    });
-
-    // Range mode
-    this.container.querySelectorAll('input[name="rangeMode"]').forEach(radio => {
-      radio.addEventListener('change', (e) => {
-        const val = (e.target as HTMLInputElement).value as 'all' | 'custom';
-        this.currentDraft.rangeMode = val;
-        sound.click();
-        this.render(store.getState());
-      });
-    });
-
-    const txtFromPage = this.container.querySelector('#txtFromPage') as HTMLInputElement;
-    const txtToPage = this.container.querySelector('#txtToPage') as HTMLInputElement;
-
-    txtFromPage?.addEventListener('change', () => {
-      this.currentDraft.fromPage = Math.max(1, parseInt(txtFromPage.value) || 1);
-      this.render(store.getState());
-    });
-
-    txtToPage?.addEventListener('change', () => {
-      this.currentDraft.toPage = Math.min(this.currentDraft.pageCount, parseInt(txtToPage.value) || this.currentDraft.pageCount);
-      this.render(store.getState());
-    });
-
-    // Paper Format & Grade
-    const selPaperFormat = this.container.querySelector('#selPaperFormat') as HTMLSelectElement;
-    selPaperFormat?.addEventListener('change', () => {
-      this.currentDraft.paperFormat = selPaperFormat.value as PaperFormat;
-      sound.click();
-      this.render(store.getState());
-    });
-
-    const selPaperGrade = this.container.querySelector('#selPaperGrade') as HTMLSelectElement;
-    selPaperGrade?.addEventListener('change', () => {
-      this.currentDraft.paper = selPaperGrade.value as PaperGrade;
-      sound.click();
-      this.render(store.getState());
-    });
-
-    // Binding
-    const selBinding = this.container.querySelector('#selBinding') as HTMLSelectElement;
-    selBinding?.addEventListener('change', () => {
-      this.currentDraft.binding = selBinding.value as BindingType;
-      sound.click();
-      this.render(store.getState());
-    });
-
-    // Customer Name & Phone
-    const txtCustName = this.container.querySelector('#txtCustName') as HTMLInputElement;
-    txtCustName?.addEventListener('input', () => {
-      this.currentDraft.customer.name = txtCustName.value;
-    });
-
-    const txtCustPhone = this.container.querySelector('#txtCustPhone') as HTMLInputElement;
-    txtCustPhone?.addEventListener('input', () => {
-      this.currentDraft.customer.phone = txtCustPhone.value;
-    });
-
-    const txtCustNotes = this.container.querySelector('#txtCustNotes') as HTMLInputElement;
-    txtCustNotes?.addEventListener('input', () => {
-      this.currentDraft.customerNotes = txtCustNotes.value;
-    });
-
-    // Payment Method
-    this.container.querySelectorAll('input[name="payMethod"]').forEach(radio => {
-      radio.addEventListener('change', (e) => {
-        const val = (e.target as HTMLInputElement).value as PaymentMethod;
-        this.currentDraft.paymentMethod = val;
-        sound.click();
-        this.render(store.getState());
-      });
-    });
-
-    // Place Order Button
-    const btnPlaceOrder = this.container.querySelector('#btnPlaceOrder');
-    btnPlaceOrder?.addEventListener('click', () => {
-      this.handleOrderSubmission();
-    });
-  }
-
-  private handleFileSelected(file: File): void {
-    const isDocx = file.name.endsWith('.docx') || file.name.endsWith('.doc');
-    const isImg = file.type.startsWith('image/');
-
-    this.currentDraft.fileName = file.name;
-    this.currentDraft.fileSizeKb = Math.round(file.size / 1024);
-    this.currentDraft.fileType = isDocx ? 'docx' : (isImg ? 'image' : 'pdf');
-    this.currentDraft.isDocxConverted = isDocx;
-
-    // Simulate page detection based on size
-    if (isDocx) {
-      this.currentDraft.pageCount = Math.max(2, Math.min(60, Math.round(file.size / 150000) || 12));
-    } else if (isImg) {
-      this.currentDraft.pageCount = 1;
-      this.currentDraft.colorMode = 'color';
-    } else {
-      this.currentDraft.pageCount = Math.max(1, Math.min(100, Math.round(file.size / 100000) || 8));
     }
-
-    this.currentDraft.fromPage = 1;
-    this.currentDraft.toPage = this.currentDraft.pageCount;
-    this.currentDraft.pageRange = `All Pages (1-${this.currentDraft.pageCount})`;
-
-    sound.success();
-    this.render(store.getState());
-  }
-
-  private applyPreset(preset: string): void {
-    if (preset === 'docx') {
-      this.currentDraft.fileName = 'Project_Final_Submission.docx';
-      this.currentDraft.fileType = 'docx';
-      this.currentDraft.isDocxConverted = true;
-      this.currentDraft.pageCount = 16;
-      this.currentDraft.colorMode = 'smart';
-      this.currentDraft.duplex = true;
-      this.currentDraft.copies = 1;
-    } else if (preset === 'color') {
-      this.currentDraft.fileName = 'Marketing_Pitch_Deck.pdf';
-      this.currentDraft.fileType = 'pdf';
-      this.currentDraft.isDocxConverted = false;
-      this.currentDraft.pageCount = 12;
-      this.currentDraft.colorMode = 'color';
-      this.currentDraft.duplex = false;
-      this.currentDraft.copies = 1;
-    } else if (preset === 'lab') {
-      this.currentDraft.fileName = 'Chemistry_Lab_Manual.pdf';
-      this.currentDraft.fileType = 'pdf';
-      this.currentDraft.isDocxConverted = false;
-      this.currentDraft.pageCount = 8;
-      this.currentDraft.colorMode = 'mono';
-      this.currentDraft.duplex = true;
-      this.currentDraft.copies = 1;
-    } else {
-      this.currentDraft.fileName = 'Ravi_Resume_2026.pdf';
-      this.currentDraft.fileType = 'pdf';
-      this.currentDraft.isDocxConverted = false;
-      this.currentDraft.pageCount = 2;
-      this.currentDraft.colorMode = 'mono';
-      this.currentDraft.duplex = false;
-      this.currentDraft.copies = 2;
-    }
-
-    this.currentDraft.fromPage = 1;
-    this.currentDraft.toPage = this.currentDraft.pageCount;
-    this.currentDraft.pageRange = `All Pages (1-${this.currentDraft.pageCount})`;
-
-    sound.click();
-    this.render(store.getState());
-  }
-
-  private handleOrderSubmission(): void {
-    if (!this.currentDraft.customer.name.trim()) {
-      this.currentDraft.customer.name = 'Walk-in Customer';
-    }
-    if (!this.currentDraft.customer.phone.trim()) {
-      this.currentDraft.customer.phone = '+91 98401 23450';
-    }
-
-    if (this.currentDraft.paymentMethod === 'RAZORPAY_UPI') {
-      // Trigger Razorpay UPI modal
-      window.dispatchEvent(new CustomEvent('open-razorpay-modal', {
-        detail: {
-          draft: { ...this.currentDraft },
-          onSuccess: (order: PrintOrder) => {
+    handleOrderSubmission() {
+        if (!this.currentDraft.customer.name.trim()) {
+            this.currentDraft.customer.name = 'Walk-in Customer';
+        }
+        if (!this.currentDraft.customer.phone.trim()) {
+            this.currentDraft.customer.phone = '+91 98401 23450';
+        }
+        if (this.currentDraft.paymentMethod === 'RAZORPAY_UPI') {
+            // Trigger Razorpay UPI modal
+            window.dispatchEvent(new CustomEvent('open-razorpay-modal', {
+                detail: {
+                    draft: { ...this.currentDraft },
+                    onSuccess: (order) => {
+                        store.setActiveCustomerOrderId(order.id);
+                        this.render(store.getState());
+                    }
+                }
+            }));
+        }
+        else {
+            const order = store.createOrder(this.currentDraft);
             store.setActiveCustomerOrderId(order.id);
             this.render(store.getState());
-          }
         }
-      }));
-    } else {
-      const order = store.createOrder(this.currentDraft);
-      store.setActiveCustomerOrderId(order.id);
-      this.render(store.getState());
     }
-  }
-
-  private update(state: SystemState): void {
-    this.render(state);
-  }
+    update(state) {
+        this.render(state);
+    }
 }

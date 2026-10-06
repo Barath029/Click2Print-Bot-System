@@ -1,16 +1,21 @@
 /**
- * SmartPrint Central Reactive Observable State Store
- * Manages FIFO Queue, Physical Rack Compartments, Split Escrow Ledger, and Telemetry.
+ * Click2Print Central Reactive State Store
+ * Implements full product lifecycle:
+ * - Customer QR scan -> Upload -> Configure -> Auto-detect -> Pay
+ * - Live Order Management -> One-click Approve & Print / Reject
+ * - B&W & Colour Auto-Routing
+ * - Dedicated Printer Setup & Test Print
+ * - Auto-File Cleanup (100% Privacy)
+ * - Custom Per-Page Pricing & Monthly Usage Analytics
  */
 import { DEFAULT_RATES, pricingEngine } from '../services/pricingEngine.js';
-import { rackAllocator } from '../services/rackAllocator.js';
-import { telemetryService } from '../services/telemetryService.js';
 import { eventBus } from './events.js';
 import { sound } from './audio.js';
-class SmartPrintStore {
-    STORAGE_KEY = 'smartprint_enterprise_state_v2';
+class Click2PrintStore {
+    STORAGE_KEY = 'click2print_state_v3';
     state;
     listeners = [];
+    printTimers = new Map();
     constructor() {
         this.state = this.loadInitialState();
     }
@@ -19,9 +24,8 @@ class SmartPrintStore {
         if (saved) {
             try {
                 const parsed = JSON.parse(saved);
-                if (parsed && parsed.orders && parsed.rackSlots) {
-                    // Re-evaluate overdue status on loaded slots
-                    rackAllocator.getOccupancyStats(parsed.rackSlots);
+                if (parsed && parsed.orders && parsed.bwPrinter && parsed.shop) {
+                    pricingEngine.setRates(parsed.pricing || DEFAULT_RATES);
                     return parsed;
                 }
             }
@@ -33,193 +37,202 @@ class SmartPrintStore {
     }
     getSeedState() {
         const now = Date.now();
-        const rackSlots = rackAllocator.generateDefaultRack();
-        // Pre-populate realistic orders with new fields
+        const shop = {
+            shopName: 'Click2Print Express Print Hub',
+            shopCode: 'C2P-X01',
+            tagline: 'Instant Automated Counter & Cloud Print Station',
+            upiId: 'click2print@icici',
+            phone: '+91 98401 23450',
+            address: 'Shop #14, Main Student Complex, Opp. Tech Gate',
+            razorpayKeyId: 'rzp_live_c2pprt_9941',
+            autoPrintOnApprove: true,
+            autoFileCleanup: true
+        };
+        const bwPrinter = {
+            id: 'PRN-BW-01',
+            name: 'Dedicated B&W Printer',
+            model: 'HP LaserJet Pro M404dn (Duplex)',
+            type: 'BW',
+            status: 'ONLINE',
+            paperTrayCount: 420,
+            inkLevelPct: 88,
+            ipAddress: '192.168.1.120:9100',
+            autoRoute: true,
+            totalJobsPrinted: 2430
+        };
+        const colorPrinter = {
+            id: 'PRN-CLR-02',
+            name: 'Dedicated Colour Printer',
+            model: 'Canon PIXMA G3010 / Epson EcoTank L3250',
+            type: 'COLOUR',
+            status: 'ONLINE',
+            paperTrayCount: 195,
+            inkLevelPct: 94,
+            ipAddress: '192.168.1.124:9100',
+            autoRoute: true,
+            totalJobsPrinted: 785
+        };
         const initialOrders = [
             {
-                id: 'SP-100',
-                token: '#SP-100',
-                student: { name: 'Pooja Iyer', rollNo: '21CS044', phone: '+91 98401 23450', department: 'Computer Science' },
-                fileName: 'VLSI_Design_Final_Lab_Manual.pdf',
-                fileSizeKb: 4200,
-                pageCount: 32,
+                id: 'ORD-1041',
+                orderNumber: 1041,
+                customer: { name: 'Karthik Raja', phone: '+91 98402 11223' },
+                fileName: 'Project_Final_Submission.docx',
+                fileType: 'docx',
+                isDocxConverted: true,
+                fileSizeKb: 3420,
+                pageCount: 36,
                 rangeMode: 'all',
                 fromPage: 1,
-                toPage: 32,
-                pageRange: 'All (1-32)',
-                bwPages: 28,
-                colorPages: 4,
-                colorMode: 'smart',
-                duplex: true,
-                paper: 'gsm75',
-                paperFormat: 'A4',
-                binding: 'spiral',
-                bindingNotes: 'Transparent PVC front cover + Black cardstock back',
-                customerNotes: 'Please print color graphs with high sharpness',
-                priority: false,
-                confidential: false,
-                totalAmount: 98.00,
-                vendorShare: 91.14,
-                platformFee: 6.86,
-                status: 'STAGED',
-                rackSlot: 'A-08',
-                pickupOtp: '3941',
-                createdAt: now - 3600000 * 2,
-                stagedAt: now - 1800000,
-                collectedAt: null
-            },
-            {
-                id: 'SP-098',
-                token: '#SP-098',
-                student: { name: 'Aditya Sen', rollNo: '20ME108', phone: '+91 97890 55412', department: 'Mechanical Eng' },
-                fileName: 'Finite_Element_Analysis_Thesis_Draft.pdf',
-                fileSizeKb: 18400,
-                pageCount: 110,
-                rangeMode: 'all',
-                fromPage: 1,
-                toPage: 110,
-                pageRange: 'All (1-110)',
-                bwPages: 96,
-                colorPages: 14,
-                colorMode: 'smart',
-                duplex: true,
-                paper: 'gsm100',
-                paperFormat: 'A4',
-                binding: 'hardcover',
-                bindingNotes: 'Golden embossed lettering on Navy Blue hardback',
-                customerNotes: 'Thesis submission copy for Academic Dean review',
-                priority: false,
-                confidential: false,
-                totalAmount: 385.00,
-                vendorShare: 358.05,
-                platformFee: 26.95,
-                status: 'STAGED',
-                rackSlot: 'B-04',
-                pickupOtp: '7182',
-                createdAt: now - 3600000 * 4,
-                stagedAt: now - 3600000 * 2.5,
-                collectedAt: null
-            },
-            {
-                id: 'SP-099',
-                token: '#SP-099',
-                student: { name: 'Rohan Deshmukh', rollNo: '23EC015', phone: '+91 94441 88992', department: 'Electronics' },
-                fileName: 'Signals_and_Systems_MidTerm_Notes.pdf',
-                fileSizeKb: 1250,
-                pageCount: 16,
-                rangeMode: 'all',
-                fromPage: 1,
-                toPage: 16,
-                pageRange: 'All (1-16)',
-                bwPages: 16,
+                toPage: 36,
+                pageRange: 'All Pages (1-36)',
+                bwPages: 36,
                 colorPages: 0,
                 colorMode: 'mono',
                 duplex: true,
+                copies: 2,
                 paper: 'gsm75',
                 paperFormat: 'A4',
                 binding: 'staple',
-                customerNotes: 'Staple top-left corner neatly',
-                priority: false,
-                confidential: false,
-                totalAmount: 18.00,
-                vendorShare: 16.74,
-                platformFee: 1.26,
-                status: 'STAGED',
-                rackSlot: 'C-02',
-                pickupOtp: '8492',
-                createdAt: now - 3600000 * 3,
-                stagedAt: now - 3600000 * 1.2,
-                collectedAt: null
+                customerNotes: 'Please staple top-left corner neatly',
+                totalAmount: 118.00,
+                paymentMethod: 'RAZORPAY_UPI',
+                paymentStatus: 'PAID',
+                status: 'PENDING',
+                createdAt: now - 180000,
+                completedAt: null,
+                routedPrinter: 'BW_PRINTER',
+                fileErased: false
             },
             {
-                id: 'SP-101',
-                token: '#SP-101',
-                student: { name: 'Neha Varma', rollNo: '22BT029', phone: '+91 98200 44112', department: 'Biotechnology' },
-                fileName: 'Biotech_Reaction_Kinetics_Paper.pdf',
-                fileSizeKb: 3100,
-                pageCount: 24,
+                id: 'ORD-1040',
+                orderNumber: 1040,
+                customer: { name: 'Ananya Sharma', phone: '+91 97890 44556' },
+                fileName: 'Marketing_Pitch_Deck.pdf',
+                fileType: 'pdf',
+                fileSizeKb: 6150,
+                pageCount: 12,
                 rangeMode: 'all',
                 fromPage: 1,
-                toPage: 24,
-                pageRange: 'All (1-24)',
-                bwPages: 24,
+                toPage: 12,
+                pageRange: 'All Pages (1-12)',
+                bwPages: 0,
+                colorPages: 12,
+                colorMode: 'color',
+                duplex: false,
+                copies: 1,
+                paper: 'gsm100',
+                paperFormat: 'A4',
+                binding: 'spiral',
+                customerNotes: 'Glossy paper preferred for client demo',
+                totalAmount: 162.00,
+                paymentMethod: 'RAZORPAY_UPI',
+                paymentStatus: 'PAID',
+                status: 'PRINTING',
+                createdAt: now - 420000,
+                completedAt: null,
+                printProgress: 70,
+                routedPrinter: 'COLOUR_PRINTER',
+                fileErased: false
+            },
+            {
+                id: 'ORD-1039',
+                orderNumber: 1039,
+                customer: { name: 'Praveen Kumar', phone: '+91 94441 77889' },
+                fileName: 'Lab_Manual_Expt3.pdf',
+                fileType: 'pdf',
+                fileSizeKb: 1800,
+                pageCount: 8,
+                rangeMode: 'all',
+                fromPage: 1,
+                toPage: 8,
+                pageRange: 'All Pages (1-8)',
+                bwPages: 8,
                 colorPages: 0,
                 colorMode: 'mono',
                 duplex: true,
+                copies: 1,
                 paper: 'gsm75',
                 paperFormat: 'A4',
-                binding: 'spiral',
-                customerNotes: 'Need plastic spiral ring, black preferred',
-                priority: false,
-                confidential: false,
-                totalAmount: 58.00,
-                vendorShare: 53.94,
-                platformFee: 4.06,
-                status: 'PRINTING',
-                rackSlot: null,
-                pickupOtp: '5031',
-                createdAt: now - 1800000,
-                stagedAt: null,
-                collectedAt: null,
-                printProgress: 65
+                binding: 'none',
+                totalAmount: 12.00,
+                paymentMethod: 'CASH_COUNTER',
+                paymentStatus: 'PAY_AT_COUNTER',
+                status: 'READY',
+                createdAt: now - 900000,
+                completedAt: now - 200000,
+                routedPrinter: 'BW_PRINTER',
+                fileErased: false
             },
             {
-                id: 'SP-102',
-                token: '#SP-102',
-                student: { name: 'Vikram Seth', rollNo: '21EE077', phone: '+91 98840 99123', department: 'Electrical' },
-                fileName: 'Power_Electronics_Schematics.pdf',
-                fileSizeKb: 2800,
-                pageCount: 18,
-                rangeMode: 'custom',
+                id: 'ORD-1038',
+                orderNumber: 1038,
+                customer: { name: 'Divya Ramesh', phone: '+91 98845 33211' },
+                fileName: 'Resume_Updated_2026.pdf',
+                fileType: 'pdf',
+                fileSizeKb: 650,
+                pageCount: 2,
+                rangeMode: 'all',
                 fromPage: 1,
-                toPage: 18,
-                pageRange: 'Pages 1-18',
-                bwPages: 14,
-                colorPages: 4,
-                colorMode: 'smart',
+                toPage: 2,
+                pageRange: 'All Pages (1-2)',
+                bwPages: 0,
+                colorPages: 2,
+                colorMode: 'color',
                 duplex: false,
+                copies: 2,
                 paper: 'gsm100',
-                paperFormat: 'A3', // Large drawing format
+                paperFormat: 'A4',
                 binding: 'none',
-                customerNotes: 'Large A3 schematic prints, do not fold!',
-                priority: true, // Rush token
-                confidential: false,
-                totalAmount: 122.00,
-                vendorShare: 113.46,
-                platformFee: 8.54,
-                status: 'QUEUED',
-                rackSlot: null,
-                pickupOtp: '6294',
-                createdAt: now - 600000,
-                stagedAt: null,
-                collectedAt: null
+                totalAmount: 44.00,
+                paymentMethod: 'RAZORPAY_UPI',
+                paymentStatus: 'PAID',
+                status: 'COMPLETED',
+                createdAt: now - 3600000 * 2,
+                completedAt: now - 3600000 * 1.8,
+                routedPrinter: 'COLOUR_PRINTER',
+                fileErased: true,
+                fileErasedAt: now - 3600000 * 1.8
             }
         ];
-        // Mark staged slots in the rack
-        initialOrders.forEach(o => {
-            if (o.status === 'STAGED' && o.rackSlot && rackSlots[o.rackSlot]) {
-                rackSlots[o.rackSlot].status = 'OCCUPIED';
-                rackSlots[o.rackSlot].orderId = o.id;
-                rackSlots[o.rackSlot].stagedTime = o.stagedAt;
+        const deletedFiles = [
+            {
+                id: 'DEL-1038',
+                orderNumber: 1038,
+                fileName: 'Resume_Updated_2026.pdf',
+                deletedAt: now - 3600000 * 1.8,
+                reason: 'PRINT_COMPLETED'
+            },
+            {
+                id: 'DEL-1037',
+                orderNumber: 1037,
+                fileName: 'Corrupted_Doc_Draft.pdf',
+                deletedAt: now - 3600000 * 3,
+                reason: 'ORDER_REJECTED'
             }
-        });
-        rackAllocator.getOccupancyStats(rackSlots, now);
-        const hubs = [
-            { id: 'hub-main', name: 'IIT Campus Central Hub', code: 'HUB-01', location: 'Main Library Ground Floor', activeOrders: 4, printersOnline: 2, status: 'ONLINE' },
-            { id: 'hub-annex', name: 'Engineering Workshop Annex', code: 'HUB-02', location: 'Mechanical Block Wing B', activeOrders: 1, printersOnline: 1, status: 'ONLINE' },
-            { id: 'hub-hostel', name: 'North Hostel Express Pod', code: 'HUB-03', location: 'Hostel 7 Common Hallway', activeOrders: 0, printersOnline: 1, status: 'ONLINE' }
         ];
+        pricingEngine.setRates(DEFAULT_RATES);
         return {
+            activeRole: 'customer',
+            adminTab: 'orders',
+            shop,
+            bwPrinter,
+            colorPrinter,
             orders: initialOrders,
-            rackSlots,
-            pricing: DEFAULT_RATES,
-            hubs,
-            activeHubId: 'hub-main',
-            printers: telemetryService.getPrinters(),
+            pricing: { ...DEFAULT_RATES },
+            usage: {
+                monthName: 'October 2026',
+                totalPagesPrinted: 14850,
+                bwPagesPrinted: 12420,
+                colorPagesPrinted: 2430,
+                totalOrdersFulfilled: 684,
+                totalRevenue: 38940.00,
+                duplexSheetsSaved: 4180
+            },
+            deletedFiles,
             events: eventBus.getHistory(),
-            activeRole: 'student',
-            activeStudentOrderId: 'SP-101',
-            audioMuted: sound.isMuted()
+            nextOrderNumber: 1042,
+            activeCustomerOrderId: 'ORD-1041'
         };
     }
     getState() {
@@ -237,7 +250,7 @@ class SmartPrintStore {
             localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.state));
         }
         catch {
-            // Storage quota catch
+            // Storage fallback
         }
     }
     setActiveRole(role) {
@@ -245,29 +258,33 @@ class SmartPrintStore {
         sound.click();
         this.notify();
     }
-    setActiveHub(hubId) {
-        this.state.activeHubId = hubId;
-        eventBus.emit('ESCROW', 'Campus Hub Switched', `Switched routing context to ${hubId}`, 'INFO');
+    setAdminTab(tab) {
+        this.state.adminTab = tab;
+        sound.click();
         this.notify();
     }
-    setActiveStudentOrder(orderId) {
-        this.state.activeStudentOrderId = orderId;
+    setActiveCustomerOrderId(orderId) {
+        this.state.activeCustomerOrderId = orderId;
         this.notify();
     }
     /**
-     * Student creates a new order after instant UPI payment
+     * Customer places order (Step 2 in Image 3)
      */
     createOrder(draft) {
-        const nextNum = this.state.orders.length + 104;
-        const orderId = `SP-${nextNum}`;
-        const token = `#SP-${nextNum}`;
-        const otp = String(Math.floor(1000 + Math.random() * 9000));
-        const quote = pricingEngine.calculate(draft.pageCount, draft.colorPages, draft.bwPages, draft.colorMode, draft.duplex, draft.paper, draft.paperFormat, draft.binding, draft.priority);
+        const orderNum = this.state.nextOrderNumber;
+        const orderId = `ORD-${orderNum}`;
+        const quote = pricingEngine.calculate(draft.pageCount, draft.colorPages, draft.bwPages, draft.colorMode, draft.duplex, draft.copies, draft.paper, draft.paperFormat, draft.binding, this.state.pricing);
+        // Auto-Routing: B&W orders go to B&W printer, color orders go to colour printer
+        const isColor = draft.colorMode === 'color' || (draft.colorMode === 'smart' && draft.colorPages > 0);
+        const routedPrinter = isColor ? 'COLOUR_PRINTER' : 'BW_PRINTER';
         const newOrder = {
             id: orderId,
-            token,
-            student: draft.student,
+            orderNumber: orderNum,
+            customer: draft.customer,
             fileName: draft.fileName,
+            fileType: draft.fileType,
+            isDocxConverted: draft.isDocxConverted || false,
+            fileSizeKb: draft.fileSizeKb,
             pageCount: draft.pageCount,
             rangeMode: draft.rangeMode,
             fromPage: draft.fromPage,
@@ -277,172 +294,233 @@ class SmartPrintStore {
             colorPages: draft.colorPages,
             colorMode: draft.colorMode,
             duplex: draft.duplex,
+            copies: draft.copies,
             paper: draft.paper,
             paperFormat: draft.paperFormat,
             binding: draft.binding,
-            bindingNotes: draft.bindingNotes,
             customerNotes: draft.customerNotes,
-            priority: draft.priority,
-            confidential: draft.confidential,
             totalAmount: quote.grandTotal,
-            vendorShare: quote.vendorShare,
-            platformFee: quote.platformFee,
-            status: 'QUEUED',
-            rackSlot: null,
-            pickupOtp: otp,
+            paymentMethod: draft.paymentMethod,
+            paymentStatus: draft.paymentMethod === 'RAZORPAY_UPI' ? 'PAID' : 'PAY_AT_COUNTER',
+            status: 'PENDING',
             createdAt: Date.now(),
-            stagedAt: null,
-            collectedAt: null
+            completedAt: null,
+            routedPrinter,
+            fileErased: false
         };
-        // FIFO insertion: if priority, place at front of queued jobs; otherwise append
-        if (draft.priority) {
-            const firstNonPriorityQueuedIndex = this.state.orders.findIndex(o => o.status === 'QUEUED' && !o.priority);
-            if (firstNonPriorityQueuedIndex !== -1) {
-                this.state.orders.splice(firstNonPriorityQueuedIndex, 0, newOrder);
-            }
-            else {
-                this.state.orders.push(newOrder);
-            }
-            eventBus.emit('QUEUE', '⚡ Rush Priority Order Ingested', `${newOrder.token} boosted to front of queue (${draft.student.name})`, 'WARN');
-        }
-        else {
-            this.state.orders.push(newOrder);
-            eventBus.emit('QUEUE', 'New Print Job Ingested', `${newOrder.token} queued for ${draft.student.name} [${draft.paperFormat}] (₹${quote.grandTotal})`, 'INFO');
-        }
-        eventBus.emit('ESCROW', 'UPI Split Transaction Settled', `Gross: ₹${quote.grandTotal} | Vendor 93%: ₹${quote.vendorShare} | Escrow 7%: ₹${quote.platformFee}`, 'SUCCESS');
-        this.state.activeStudentOrderId = newOrder.id;
+        this.state.orders.unshift(newOrder);
+        this.state.nextOrderNumber = orderNum + 1;
+        this.state.activeCustomerOrderId = orderId;
+        eventBus.emit('ORDER', 'New Order Placed', `#${orderNum} — ${draft.customer.name} placed order for ${draft.fileName} (₹${quote.grandTotal})`, 'SUCCESS');
         sound.success();
         this.notify();
+        // If auto-print on approve is enabled and shop owner is in instant auto-accept mode,
+        // we can still let shop owner click "One-Click Approve & Print" or trigger directly
         return newOrder;
     }
     /**
-     * Operator triggers printing
+     * Shop Owner "One-Click Approve & Print" (Image 2)
+     * Approves an order and it prints automatically and silently — no further action required.
      */
-    startPrinting(orderId) {
+    approveAndPrint(orderId) {
+        const order = this.state.orders.find(o => o.id === orderId);
+        if (!order || (order.status !== 'PENDING' && order.status !== 'APPROVED'))
+            return;
+        order.status = 'APPROVED';
+        eventBus.emit('ORDER', 'Order Approved', `#${order.orderNumber} approved — sending to Auto Print Queue`, 'INFO');
+        sound.click();
+        this.notify();
+        // Send immediately to Auto Print Queue
+        this.startBackgroundPrinting(orderId);
+    }
+    /**
+     * Background Auto-Print Queue Worker (Image 2 & 3)
+     */
+    startBackgroundPrinting(orderId) {
         const order = this.state.orders.find(o => o.id === orderId);
         if (!order)
             return;
+        // Update status to PRINTING
         order.status = 'PRINTING';
-        order.printProgress = 20;
-        telemetryService.recordJobPrint(order.bwPages, order.colorPages);
-        eventBus.emit('PRINT', 'Printer Engine Engaged', `Printing ${order.token} on Canon ImageRUNNER [${order.paperFormat}] (${order.pageCount} pages)`, 'INFO');
+        order.printProgress = 10;
+        const printer = order.routedPrinter === 'BW_PRINTER' ? this.state.bwPrinter : this.state.colorPrinter;
+        printer.status = 'PRINTING';
+        eventBus.emit('PRINT', 'Auto-Printing Started', `#${order.orderNumber} printing on ${printer.name} (${order.pageCount} pgs × ${order.copies} copies)`, 'INFO');
         sound.printStart();
         this.notify();
-        // Simulate print completion progress
-        let progress = 20;
-        const interval = setInterval(() => {
+        // Clear existing timer if any
+        if (this.printTimers.has(orderId)) {
+            clearInterval(this.printTimers.get(orderId));
+        }
+        let progress = 10;
+        const interval = window.setInterval(() => {
             progress += 25;
             if (progress >= 100) {
-                order.printProgress = 100;
                 clearInterval(interval);
-                eventBus.emit('PRINT', 'Print & Binding Finished', `${order.token} printed & assembled. Ready for shelf staging.`, 'SUCCESS');
-                sound.printDone();
-                this.notify();
+                this.printTimers.delete(orderId);
+                order.printProgress = 100;
+                this.completeOrderPrint(orderId);
             }
             else {
                 order.printProgress = progress;
                 this.notify();
             }
-        }, 400);
+        }, 600);
+        this.printTimers.set(orderId, interval);
     }
     /**
-     * Operator stages the finished bundle into an assigned physical rack slot
+     * Print completed -> Mark READY -> Auto-Delete file (Image 3: Step 4)
      */
-    stageOrder(orderId, customSlotCode) {
-        const order = this.state.orders.find(o => o.id === orderId);
-        if (!order)
-            return null;
-        const isHeavy = order.binding === 'hardcover' || order.pageCount > 80;
-        const targetSlot = customSlotCode || rackAllocator.findOptimalSlot(this.state.rackSlots, isHeavy);
-        if (!targetSlot) {
-            eventBus.emit('RACK', 'Rack Overflow Warning', 'All 50 shelf compartments are currently occupied!', 'ALERT');
-            sound.error();
-            return null;
-        }
-        const slot = this.state.rackSlots[targetSlot];
-        if (slot) {
-            slot.status = 'OCCUPIED';
-            slot.orderId = order.id;
-            slot.stagedTime = Date.now();
-        }
-        order.status = 'STAGED';
-        order.rackSlot = targetSlot;
-        order.stagedAt = Date.now();
-        eventBus.emit('RACK', 'Bundle Staged in Physical Shelf', `${order.token} placed in [RACK ${targetSlot}]. SMS & WhatsApp alert dispatched to student with OTP: ${order.pickupOtp}`, 'SUCCESS');
-        sound.rackStaged();
-        this.notify();
-        return targetSlot;
-    }
-    /**
-     * 15-Second Express Pickup Kiosk: Student authenticates with 4-digit OTP
-     */
-    authenticatePickupByOtp(otp) {
-        const cleanOtp = otp.trim();
-        const order = this.state.orders.find(o => o.pickupOtp === cleanOtp && o.status === 'STAGED');
-        if (!order) {
-            sound.error();
-            return null;
-        }
-        sound.success();
-        return order;
-    }
-    /**
-     * Confirms pickup, releases the physical rack compartment, marks order collected
-     */
-    completePickup(orderId) {
+    completeOrderPrint(orderId) {
         const order = this.state.orders.find(o => o.id === orderId);
         if (!order)
             return;
-        if (order.rackSlot && this.state.rackSlots[order.rackSlot]) {
-            const slot = this.state.rackSlots[order.rackSlot];
-            slot.status = 'EMPTY';
-            slot.orderId = null;
-            slot.stagedTime = null;
+        order.status = 'READY';
+        order.completedAt = Date.now();
+        const printer = order.routedPrinter === 'BW_PRINTER' ? this.state.bwPrinter : this.state.colorPrinter;
+        printer.status = 'ONLINE';
+        printer.totalJobsPrinted += 1;
+        printer.paperTrayCount = Math.max(0, printer.paperTrayCount - (order.pageCount * order.copies));
+        // Update Monthly Usage Tracking (Image 4)
+        const totalPrinted = order.pageCount * order.copies;
+        this.state.usage.totalPagesPrinted += totalPrinted;
+        if (order.routedPrinter === 'BW_PRINTER') {
+            this.state.usage.bwPagesPrinted += totalPrinted;
         }
-        order.status = 'COLLECTED';
-        order.collectedAt = Date.now();
-        eventBus.emit('KIOSK', 'Express Handover Completed', `${order.token} picked up by ${order.student.name}. Shelf ${order.rackSlot} liberated in under 15 seconds.`, 'SUCCESS');
+        else {
+            this.state.usage.colorPagesPrinted += totalPrinted;
+        }
+        this.state.usage.totalOrdersFulfilled += 1;
+        this.state.usage.totalRevenue += order.totalAmount;
+        if (order.duplex) {
+            this.state.usage.duplexSheetsSaved += Math.floor(totalPrinted / 2);
+        }
+        eventBus.emit('PRINT', 'Auto-Print Finished', `#${order.orderNumber} printed successfully — Ready for pickup!`, 'SUCCESS');
+        sound.printDone();
+        // Auto File Cleanup: 100% private, zero data retained (Image 3 & 4)
+        if (this.state.shop.autoFileCleanup) {
+            this.autoDeleteFile(order);
+        }
+        this.notify();
+    }
+    /**
+     * Auto File Cleanup (Image 4)
+     * Uploaded files are deleted automatically after printing — 100% secure customer privacy
+     */
+    autoDeleteFile(order) {
+        order.fileErased = true;
+        order.fileErasedAt = Date.now();
+        const logEntry = {
+            id: `DEL-${Date.now()}`,
+            orderNumber: order.orderNumber,
+            fileName: order.fileName,
+            deletedAt: Date.now(),
+            reason: 'PRINT_COMPLETED'
+        };
+        this.state.deletedFiles.unshift(logEntry);
+        if (this.state.deletedFiles.length > 50) {
+            this.state.deletedFiles.pop();
+        }
+        eventBus.emit('SECURITY', 'Auto File Purged', `File "${order.fileName}" for Order #${order.orderNumber} permanently erased from server (Zero Data Retained).`, 'SUCCESS');
+    }
+    /**
+     * Reject Order with Single Click (Image 2)
+     * Decline any order with a single click. The customer is notified and the file is immediately deleted.
+     */
+    rejectOrder(orderId, reason = 'Declined by shop operator') {
+        const order = this.state.orders.find(o => o.id === orderId);
+        if (!order)
+            return;
+        if (this.printTimers.has(orderId)) {
+            clearInterval(this.printTimers.get(orderId));
+            this.printTimers.delete(orderId);
+        }
+        order.status = 'REJECTED';
+        order.fileErased = true;
+        order.fileErasedAt = Date.now();
+        const logEntry = {
+            id: `DEL-${Date.now()}`,
+            orderNumber: order.orderNumber,
+            fileName: order.fileName,
+            deletedAt: Date.now(),
+            reason: 'ORDER_REJECTED'
+        };
+        this.state.deletedFiles.unshift(logEntry);
+        eventBus.emit('ORDER', 'Order Rejected & File Purged', `#${order.orderNumber} rejected (${reason}). File ${order.fileName} permanently wiped immediately.`, 'WARN');
+        sound.error();
+        this.notify();
+    }
+    /**
+     * Mark Order Collected by Customer
+     */
+    markOrderCompleted(orderId) {
+        const order = this.state.orders.find(o => o.id === orderId);
+        if (!order)
+            return;
+        order.status = 'COMPLETED';
+        eventBus.emit('ORDER', 'Order Delivered', `#${order.orderNumber} handed over to ${order.customer.name}`, 'SUCCESS');
         sound.success();
         this.notify();
     }
     /**
-     * SuperAdmin: Concurrency Spike Stress-Test Simulator
+     * Test Print Button (Image 1)
+     * Instantly confirm any printer is connected and working with a single test-print tap — no guesswork.
      */
-    simulateRushOrders(count = 3) {
-        const samples = [
-            { name: 'Karthik Raja', rollNo: '23CS112', phone: '+91 97891 00221', file: 'Operating_Systems_Project.pdf', pages: 28, bw: 24, col: 4, binding: 'spiral', format: 'A4', priority: true, note: 'Need transparent front spiral binding' },
-            { name: 'Divya Nair', rollNo: '22EE041', phone: '+91 99402 33441', file: 'Control_Systems_Assignment_3.pdf', pages: 12, bw: 12, col: 0, binding: 'staple', format: 'A4', priority: false, note: 'Corner staple top left' },
-            { name: 'Varun Patel', rollNo: '21ME090', phone: '+91 98211 44552', file: 'Robotics_Kinematics_Drawing.pdf', pages: 10, bw: 6, col: 4, binding: 'none', format: 'A3', priority: true, note: 'Do not fold A3 drawing sheets' }
-        ];
-        samples.slice(0, count).forEach(s => {
-            this.createOrder({
-                fileName: s.file,
-                pageCount: s.pages,
-                rangeMode: 'all',
-                fromPage: 1,
-                toPage: s.pages,
-                pageRange: `1-${s.pages}`,
-                bwPages: s.bw,
-                colorPages: s.col,
-                colorMode: s.col > 0 ? 'smart' : 'mono',
-                duplex: true,
-                paper: 'gsm75',
-                paperFormat: s.format,
-                binding: s.binding,
-                customerNotes: s.note,
-                priority: s.priority,
-                confidential: false,
-                student: { name: s.name, rollNo: s.rollNo, phone: s.phone }
-            });
-        });
-        eventBus.emit('QUEUE', '⚡ Peak Concurrency Spike Injected', `Simulated ${count} simultaneous deadline submissions across IIT Central Hub.`, 'WARN');
+    triggerTestPrint(printerType) {
+        const printer = printerType === 'BW' ? this.state.bwPrinter : this.state.colorPrinter;
+        printer.paperTrayCount = Math.max(0, printer.paperTrayCount - 1);
+        eventBus.emit('PRINT', 'Test Print Sent', `Hardware test pattern sent to ${printer.name} (${printer.model}) at ${printer.ipAddress} — Connection 100% OK`, 'SUCCESS');
+        sound.printStart();
+        setTimeout(() => sound.printDone(), 700);
+        this.notify();
+        return {
+            success: true,
+            timestamp: Date.now(),
+            printerName: printer.name,
+            model: printer.model,
+            ip: printer.ipAddress
+        };
+    }
+    /**
+     * Dedicated Printer Setup (Image 1)
+     */
+    updatePrinterConfig(type, updates) {
+        if (type === 'BW') {
+            Object.assign(this.state.bwPrinter, updates);
+        }
+        else {
+            Object.assign(this.state.colorPrinter, updates);
+        }
+        eventBus.emit('SYSTEM', 'Printer Config Updated', `${type} Printer configuration saved successfully.`, 'INFO');
+        sound.click();
+        this.notify();
+    }
+    /**
+     * Custom Per-Page Pricing (Image 4)
+     * Set your own price per page for B&W and colour prints separately, applies instantly to new orders.
+     */
+    updatePricing(newRates) {
+        this.state.pricing = { ...newRates };
+        pricingEngine.setRates(this.state.pricing);
+        eventBus.emit('SYSTEM', 'Pricing Updated', `New rates applied: B&W ₹${newRates.bwSingle}/pg, Colour ₹${newRates.colorSingle}/pg. Instant update active.`, 'SUCCESS');
+        sound.success();
+        this.notify();
+    }
+    /**
+     * Easy Printer Settings & Shop Config (Image 4)
+     */
+    updateShopConfig(updates) {
+        Object.assign(this.state.shop, updates);
+        eventBus.emit('SYSTEM', 'Shop Settings Saved', `Shop configuration updated.`, 'INFO');
+        sound.click();
+        this.notify();
     }
     resetData() {
         localStorage.removeItem(this.STORAGE_KEY);
         this.state = this.getSeedState();
-        eventBus.emit('ESCROW', 'Database Restored to Demo Seed', 'All FIFO queues, rack slots, and revenue ledgers re-initialized.', 'INFO');
+        eventBus.emit('SYSTEM', 'Data Reset', 'All demo data, orders, and counters reset.', 'INFO');
         sound.click();
         this.notify();
     }
 }
-export const store = new SmartPrintStore();
+export const store = new Click2PrintStore();

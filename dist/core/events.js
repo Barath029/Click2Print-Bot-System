@@ -1,5 +1,5 @@
 /**
- * SmartPrint Event Bus & Live Activity Log
+ * Click2Print Event Bus & Activity Log
  */
 class EventBus {
     listeners = [];

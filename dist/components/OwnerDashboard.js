@@ -6,34 +6,23 @@
  * 3. Usage & Settings (Image 4)
  * 4. How Click2Print Works (Image 3)
  */
-
 import { store } from '../core/store.js';
 import { sound } from '../core/audio.js';
-import {
-  SystemState,
-  PrintOrder,
-  AdminTab,
-  PricingRates
-} from '../types/index.js';
-
 export class OwnerDashboardComponent {
-  private container: HTMLElement;
-  private activeFilter: 'all' | 'pending' | 'printing' | 'ready' | 'completed' | 'rejected' = 'all';
-
-  constructor(container: HTMLElement) {
-    this.container = container;
-    this.render(store.getState());
-    store.subscribe((state) => this.update(state));
-  }
-
-  private render(state: SystemState): void {
-    const activeTab = state.adminTab;
-    const pendingOrders = state.orders.filter(o => o.status === 'PENDING');
-    const printingOrders = state.orders.filter(o => o.status === 'PRINTING');
-    const readyOrders = state.orders.filter(o => o.status === 'READY');
-    const completedOrders = state.orders.filter(o => o.status === 'COMPLETED');
-
-    this.container.innerHTML = `
+    container;
+    activeFilter = 'all';
+    constructor(container) {
+        this.container = container;
+        this.render(store.getState());
+        store.subscribe((state) => this.update(state));
+    }
+    render(state) {
+        const activeTab = state.adminTab;
+        const pendingOrders = state.orders.filter(o => o.status === 'PENDING');
+        const printingOrders = state.orders.filter(o => o.status === 'PRINTING');
+        const readyOrders = state.orders.filter(o => o.status === 'READY');
+        const completedOrders = state.orders.filter(o => o.status === 'COMPLETED');
+        this.container.innerHTML = `
       <div class="admin-dashboard-view">
 
         <!-- Admin Navigation Tabs -->
@@ -72,39 +61,34 @@ export class OwnerDashboardComponent {
 
       </div>
     `;
-
-    this.bindEvents(state);
-  }
-
-  private renderActiveTab(tab: AdminTab, state: SystemState): string {
-    switch (tab) {
-      case 'orders':
-        return this.renderOrdersManagementTab(state);
-      case 'printers':
-        return this.renderPrinterManagementTab(state);
-      case 'usage':
-        return this.renderUsageAndSettingsTab(state);
-      case 'how-it-works':
-        return this.renderHowItWorksTab(state);
-      default:
-        return this.renderOrdersManagementTab(state);
+        this.bindEvents(state);
     }
-  }
-
-  // =========================================================================
-  // SECTION 1: PRINT ORDER MANAGEMENT (Image 2)
-  // =========================================================================
-  private renderOrdersManagementTab(state: SystemState): string {
-    const pendingCount = state.orders.filter(o => o.status === 'PENDING').length;
-    const printingCount = state.orders.filter(o => o.status === 'PRINTING').length;
-    const readyCount = state.orders.filter(o => o.status === 'READY').length;
-    const completedCount = state.orders.filter(o => o.status === 'COMPLETED').length;
-    const rejectedCount = state.orders.filter(o => o.status === 'REJECTED').length;
-
-    const filtered = this.getFilteredOrders(state);
-    const totalRevenueSum = state.orders.filter(o => o.paymentStatus === 'PAID').reduce((acc, o) => acc + o.totalAmount, 0);
-
-    return `
+    renderActiveTab(tab, state) {
+        switch (tab) {
+            case 'orders':
+                return this.renderOrdersManagementTab(state);
+            case 'printers':
+                return this.renderPrinterManagementTab(state);
+            case 'usage':
+                return this.renderUsageAndSettingsTab(state);
+            case 'how-it-works':
+                return this.renderHowItWorksTab(state);
+            default:
+                return this.renderOrdersManagementTab(state);
+        }
+    }
+    // =========================================================================
+    // SECTION 1: PRINT ORDER MANAGEMENT (Image 2)
+    // =========================================================================
+    renderOrdersManagementTab(state) {
+        const pendingCount = state.orders.filter(o => o.status === 'PENDING').length;
+        const printingCount = state.orders.filter(o => o.status === 'PRINTING').length;
+        const readyCount = state.orders.filter(o => o.status === 'READY').length;
+        const completedCount = state.orders.filter(o => o.status === 'COMPLETED').length;
+        const rejectedCount = state.orders.filter(o => o.status === 'REJECTED').length;
+        const filtered = this.getFilteredOrders(state);
+        const totalRevenueSum = state.orders.filter(o => o.paymentStatus === 'PAID').reduce((acc, o) => acc + o.totalAmount, 0);
+        return `
       <div class="orders-management-section">
 
         <!-- Top Section Header matching Screenshot 2 -->
@@ -293,14 +277,12 @@ export class OwnerDashboardComponent {
 
       </div>
     `;
-  }
-
-  private renderOrderCard(order: PrintOrder, state: SystemState): string {
-    const isBW = order.routedPrinter === 'BW_PRINTER';
-    const printerName = isBW ? state.bwPrinter.name : state.colorPrinter.name;
-    const timeAgo = this.formatTimeAgo(order.createdAt);
-
-    return `
+    }
+    renderOrderCard(order, state) {
+        const isBW = order.routedPrinter === 'BW_PRINTER';
+        const printerName = isBW ? state.bwPrinter.name : state.colorPrinter.name;
+        const timeAgo = this.formatTimeAgo(order.createdAt);
+        return `
       <div class="clean-order-card status-${order.status.toLowerCase()}">
         
         <!-- Order Card Top Bar -->
@@ -447,16 +429,14 @@ export class OwnerDashboardComponent {
 
       </div>
     `;
-  }
-
-  // =========================================================================
-  // SECTION 2: PRINTER MANAGEMENT (Image 1)
-  // =========================================================================
-  private renderPrinterManagementTab(state: SystemState): string {
-    const bw = state.bwPrinter;
-    const clr = state.colorPrinter;
-
-    return `
+    }
+    // =========================================================================
+    // SECTION 2: PRINTER MANAGEMENT (Image 1)
+    // =========================================================================
+    renderPrinterManagementTab(state) {
+        const bw = state.bwPrinter;
+        const clr = state.colorPrinter;
+        return `
       <div class="printer-management-section">
 
         <!-- Top Section Header matching Screenshot 1 -->
@@ -681,16 +661,14 @@ export class OwnerDashboardComponent {
 
       </div>
     `;
-  }
-
-  // =========================================================================
-  // SECTION 3: USAGE & SETTINGS (Image 4)
-  // =========================================================================
-  private renderUsageAndSettingsTab(state: SystemState): string {
-    const u = state.usage;
-    const p = state.pricing;
-
-    return `
+    }
+    // =========================================================================
+    // SECTION 3: USAGE & SETTINGS (Image 4)
+    // =========================================================================
+    renderUsageAndSettingsTab(state) {
+        const u = state.usage;
+        const p = state.pricing;
+        return `
       <div class="usage-settings-section">
 
         <!-- Top Section Header matching Screenshot 4 -->
@@ -954,13 +932,12 @@ export class OwnerDashboardComponent {
 
       </div>
     `;
-  }
-
-  // =========================================================================
-  // SECTION 4: HOW CLICK2PRINT WORKS (Image 3)
-  // =========================================================================
-  private renderHowItWorksTab(state: SystemState): string {
-    return `
+    }
+    // =========================================================================
+    // SECTION 4: HOW CLICK2PRINT WORKS (Image 3)
+    // =========================================================================
+    renderHowItWorksTab(state) {
+        return `
       <div class="how-it-works-section">
         
         <!-- Header from Screenshot 3 -->
@@ -1031,268 +1008,248 @@ export class OwnerDashboardComponent {
 
       </div>
     `;
-  }
-
-  // =========================================================================
-  // EVENT BINDINGS
-  // =========================================================================
-  private bindEvents(state: SystemState): void {
-    // Navigation Tabs
-    this.container.querySelectorAll('.admin-tab-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const tab = (btn as HTMLElement).dataset.tab as AdminTab;
-        store.setAdminTab(tab);
-      });
-    });
-
-    // Orders Filter Buttons
-    this.container.querySelectorAll('.order-filter-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        this.activeFilter = (btn as HTMLElement).dataset.filter as typeof this.activeFilter;
-        sound.click();
-        this.render(store.getState());
-      });
-    });
-
-    // One-Click Action Buttons
-    this.container.querySelectorAll('[data-action]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const action = (btn as HTMLElement).dataset.action;
-        const id = (btn as HTMLElement).dataset.id;
-        if (!id) return;
-
-        if (action === 'approve') {
-          store.approveAndPrint(id);
-        } else if (action === 'reject') {
-          if (confirm(`Reject order ${id} and permanently delete customer file?`)) {
-            store.rejectOrder(id, 'Declined by shop operator');
-          }
-        } else if (action === 'start-print') {
-          store.startBackgroundPrinting(id);
-        } else if (action === 'complete') {
-          store.markOrderCompleted(id);
-        }
-      });
-    });
-
-    // Simulate New Order
-    const btnSimulateOrder = this.container.querySelector('#btnSimulateOrder');
-    btnSimulateOrder?.addEventListener('click', () => {
-      this.simulateCustomerOrder();
-    });
-
-    // Hardware Test Print Buttons (Image 1)
-    const btnTestBw = this.container.querySelector('#btnTestBwPrinter');
-    btnTestBw?.addEventListener('click', () => {
-      const res = store.triggerTestPrint('BW');
-      window.dispatchEvent(new CustomEvent('open-test-print-modal', { detail: res }));
-    });
-
-    const btnTestClr = this.container.querySelector('#btnTestClrPrinter');
-    btnTestClr?.addEventListener('click', () => {
-      const res = store.triggerTestPrint('COLOUR');
-      window.dispatchEvent(new CustomEvent('open-test-print-modal', { detail: res }));
-    });
-
-    // Save B&W config
-    const btnSaveBW = this.container.querySelector('#btnSaveBWConfig');
-    btnSaveBW?.addEventListener('click', () => {
-      const sel = this.container.querySelector('#selBwPrinterModel') as HTMLSelectElement;
-      const chk = this.container.querySelector('#chkAutoRouteBW') as HTMLInputElement;
-      store.updatePrinterConfig('BW', {
-        model: sel.value,
-        autoRoute: chk.checked
-      });
-      alert('Dedicated B&W Printer configuration saved successfully!');
-    });
-
-    // Save Colour config
-    const btnSaveClr = this.container.querySelector('#btnSaveClrConfig');
-    btnSaveClr?.addEventListener('click', () => {
-      const sel = this.container.querySelector('#selClrPrinterModel') as HTMLSelectElement;
-      const chk = this.container.querySelector('#chkAutoRouteClr') as HTMLInputElement;
-      store.updatePrinterConfig('COLOUR', {
-        model: sel.value,
-        autoRoute: chk.checked
-      });
-      alert('Dedicated Colour Printer configuration saved successfully!');
-    });
-
-    // Print Shop QR Poster (Image 1)
-    const btnPrintQR = this.container.querySelector('#btnPrintShopQrAction');
-    btnPrintQR?.addEventListener('click', () => {
-      sound.click();
-      window.dispatchEvent(new CustomEvent('open-shop-qr-modal'));
-    });
-
-    // Save Pricing Rates (Image 4)
-    const btnSavePricing = this.container.querySelector('#btnSavePricingRates');
-    btnSavePricing?.addEventListener('click', () => {
-      const bwSingle = parseFloat((this.container.querySelector('#rateBwSingle') as HTMLInputElement)?.value) || 2.0;
-      const bwDuplex = parseFloat((this.container.querySelector('#rateBwDuplex') as HTMLInputElement)?.value) || 3.0;
-      const colorSingle = parseFloat((this.container.querySelector('#rateColorSingle') as HTMLInputElement)?.value) || 10.0;
-      const gsm100 = parseFloat((this.container.querySelector('#ratePaperGsm100') as HTMLInputElement)?.value) || 1.0;
-      const spiral = parseFloat((this.container.querySelector('#rateBindingSpiral') as HTMLInputElement)?.value) || 30.0;
-      const staple = parseFloat((this.container.querySelector('#rateBindingStaple') as HTMLInputElement)?.value) || 5.0;
-
-      const newRates: PricingRates = {
-        ...state.pricing,
-        bwSingle,
-        bwDuplex,
-        colorSingle,
-        paper: {
-          ...state.pricing.paper,
-          gsm100
-        },
-        binding: {
-          ...state.pricing.binding,
-          spiral,
-          staple
-        }
-      };
-
-      store.updatePricing(newRates);
-      alert('Custom per-page pricing saved! Applies instantly to all incoming customer orders.');
-    });
-
-    // Save Shop Config (Image 4)
-    const btnSaveShop = this.container.querySelector('#btnSaveShopConfig');
-    btnSaveShop?.addEventListener('click', () => {
-      const shopName = (this.container.querySelector('#cfgShopName') as HTMLInputElement)?.value;
-      const address = (this.container.querySelector('#cfgShopAddress') as HTMLInputElement)?.value;
-      const autoPrint = (this.container.querySelector('#cfgAutoApprove') as HTMLInputElement)?.checked;
-      const autoCleanup = (this.container.querySelector('#cfgAutoCleanup') as HTMLInputElement)?.checked;
-
-      store.updateShopConfig({
-        shopName,
-        address,
-        autoPrintOnApprove: autoPrint,
-        autoFileCleanup: autoCleanup
-      });
-      alert('Shop settings updated!');
-    });
-
-    // Save Payments
-    const btnSavePay = this.container.querySelector('#btnSavePayments');
-    btnSavePay?.addEventListener('click', () => {
-      const key = (this.container.querySelector('#cfgRazorpayKey') as HTMLInputElement)?.value;
-      const upi = (this.container.querySelector('#cfgUpiId') as HTMLInputElement)?.value;
-      store.updateShopConfig({
-        razorpayKeyId: key,
-        upiId: upi
-      });
-      alert('Razorpay payments configuration updated!');
-    });
-
-    // Run Full Simulation (Image 3)
-    const btnRunSim = this.container.querySelector('#btnRunFullSimulation');
-    btnRunSim?.addEventListener('click', () => {
-      this.runFullSimulation();
-    });
-  }
-
-  private simulateCustomerOrder(): void {
-    const names = ['Meera Nair', 'Siddharth Roy', 'Harish Babu', 'Kavitha S.', 'Tanvi Gupta'];
-    const docs = [
-      { name: 'Semester_Project_Presentation.docx', type: 'docx' as const, pages: 18, mode: 'color' as const },
-      { name: 'Internship_Certificate.pdf', type: 'pdf' as const, pages: 1, mode: 'color' as const },
-      { name: 'Assignment_Unit_4.docx', type: 'docx' as const, pages: 12, mode: 'mono' as const },
-      { name: 'Research_Paper_Draft.pdf', type: 'pdf' as const, pages: 24, mode: 'mono' as const }
-    ];
-
-    const randomName = names[Math.floor(Math.random() * names.length)];
-    const randomDoc = docs[Math.floor(Math.random() * docs.length)];
-
-    store.createOrder({
-      fileName: randomDoc.name,
-      fileType: randomDoc.type,
-      isDocxConverted: randomDoc.type === 'docx',
-      fileSizeKb: Math.floor(Math.random() * 4000) + 800,
-      pageCount: randomDoc.pages,
-      rangeMode: 'all',
-      fromPage: 1,
-      toPage: randomDoc.pages,
-      pageRange: `All Pages (1-${randomDoc.pages})`,
-      bwPages: randomDoc.mode === 'mono' ? randomDoc.pages : 0,
-      colorPages: randomDoc.mode === 'color' ? randomDoc.pages : 0,
-      colorMode: randomDoc.mode,
-      duplex: true,
-      copies: 1,
-      paper: 'gsm75',
-      paperFormat: 'A4',
-      binding: 'none',
-      customerNotes: 'Simulated customer walk-in submission',
-      customer: {
-        name: randomName,
-        phone: `+91 9840${Math.floor(Math.random() * 89999 + 10000)}`
-      },
-      paymentMethod: 'RAZORPAY_UPI'
-    });
-  }
-
-  private runFullSimulation(): void {
-    sound.success();
-    // Step 1 & 2: Simulate customer scanning and submitting order
-    const order = store.createOrder({
-      fileName: 'Campus_Thesis_Submission_Final.docx',
-      fileType: 'docx',
-      isDocxConverted: true,
-      fileSizeKb: 5400,
-      pageCount: 22,
-      rangeMode: 'all',
-      fromPage: 1,
-      toPage: 22,
-      pageRange: 'All Pages (1-22)',
-      bwPages: 22,
-      colorPages: 0,
-      colorMode: 'mono',
-      duplex: true,
-      copies: 1,
-      paper: 'gsm75',
-      paperFormat: 'A4',
-      binding: 'staple',
-      customerNotes: 'Automated 30-second live demonstration order',
-      customer: {
-        name: 'Arjun Das',
-        phone: '+91 98401 55667'
-      },
-      paymentMethod: 'RAZORPAY_UPI'
-    });
-
-    // Switch to orders tab
-    store.setAdminTab('orders');
-
-    // Step 3: Automatically trigger One-Click Approve & Print after 2 seconds
-    setTimeout(() => {
-      store.approveAndPrint(order.id);
-    }, 2000);
-  }
-
-  private getFilteredOrders(state: SystemState): PrintOrder[] {
-    switch (this.activeFilter) {
-      case 'pending':
-        return state.orders.filter(o => o.status === 'PENDING');
-      case 'printing':
-        return state.orders.filter(o => o.status === 'PRINTING');
-      case 'ready':
-        return state.orders.filter(o => o.status === 'READY');
-      case 'completed':
-        return state.orders.filter(o => o.status === 'COMPLETED');
-      case 'rejected':
-        return state.orders.filter(o => o.status === 'REJECTED');
-      default:
-        return [...state.orders];
     }
-  }
-
-  private formatTimeAgo(ts: number): string {
-    const diff = Math.floor((Date.now() - ts) / 1000);
-    if (diff < 60) return `${diff}s ago`;
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    return `${Math.floor(diff / 3600)}h ago`;
-  }
-
-  private update(state: SystemState): void {
-    this.render(state);
-  }
+    // =========================================================================
+    // EVENT BINDINGS
+    // =========================================================================
+    bindEvents(state) {
+        // Navigation Tabs
+        this.container.querySelectorAll('.admin-tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const tab = btn.dataset.tab;
+                store.setAdminTab(tab);
+            });
+        });
+        // Orders Filter Buttons
+        this.container.querySelectorAll('.order-filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.activeFilter = btn.dataset.filter;
+                sound.click();
+                this.render(store.getState());
+            });
+        });
+        // One-Click Action Buttons
+        this.container.querySelectorAll('[data-action]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const action = btn.dataset.action;
+                const id = btn.dataset.id;
+                if (!id)
+                    return;
+                if (action === 'approve') {
+                    store.approveAndPrint(id);
+                }
+                else if (action === 'reject') {
+                    if (confirm(`Reject order ${id} and permanently delete customer file?`)) {
+                        store.rejectOrder(id, 'Declined by shop operator');
+                    }
+                }
+                else if (action === 'start-print') {
+                    store.startBackgroundPrinting(id);
+                }
+                else if (action === 'complete') {
+                    store.markOrderCompleted(id);
+                }
+            });
+        });
+        // Simulate New Order
+        const btnSimulateOrder = this.container.querySelector('#btnSimulateOrder');
+        btnSimulateOrder?.addEventListener('click', () => {
+            this.simulateCustomerOrder();
+        });
+        // Hardware Test Print Buttons (Image 1)
+        const btnTestBw = this.container.querySelector('#btnTestBwPrinter');
+        btnTestBw?.addEventListener('click', () => {
+            const res = store.triggerTestPrint('BW');
+            window.dispatchEvent(new CustomEvent('open-test-print-modal', { detail: res }));
+        });
+        const btnTestClr = this.container.querySelector('#btnTestClrPrinter');
+        btnTestClr?.addEventListener('click', () => {
+            const res = store.triggerTestPrint('COLOUR');
+            window.dispatchEvent(new CustomEvent('open-test-print-modal', { detail: res }));
+        });
+        // Save B&W config
+        const btnSaveBW = this.container.querySelector('#btnSaveBWConfig');
+        btnSaveBW?.addEventListener('click', () => {
+            const sel = this.container.querySelector('#selBwPrinterModel');
+            const chk = this.container.querySelector('#chkAutoRouteBW');
+            store.updatePrinterConfig('BW', {
+                model: sel.value,
+                autoRoute: chk.checked
+            });
+            alert('Dedicated B&W Printer configuration saved successfully!');
+        });
+        // Save Colour config
+        const btnSaveClr = this.container.querySelector('#btnSaveClrConfig');
+        btnSaveClr?.addEventListener('click', () => {
+            const sel = this.container.querySelector('#selClrPrinterModel');
+            const chk = this.container.querySelector('#chkAutoRouteClr');
+            store.updatePrinterConfig('COLOUR', {
+                model: sel.value,
+                autoRoute: chk.checked
+            });
+            alert('Dedicated Colour Printer configuration saved successfully!');
+        });
+        // Print Shop QR Poster (Image 1)
+        const btnPrintQR = this.container.querySelector('#btnPrintShopQrAction');
+        btnPrintQR?.addEventListener('click', () => {
+            sound.click();
+            window.dispatchEvent(new CustomEvent('open-shop-qr-modal'));
+        });
+        // Save Pricing Rates (Image 4)
+        const btnSavePricing = this.container.querySelector('#btnSavePricingRates');
+        btnSavePricing?.addEventListener('click', () => {
+            const bwSingle = parseFloat(this.container.querySelector('#rateBwSingle')?.value) || 2.0;
+            const bwDuplex = parseFloat(this.container.querySelector('#rateBwDuplex')?.value) || 3.0;
+            const colorSingle = parseFloat(this.container.querySelector('#rateColorSingle')?.value) || 10.0;
+            const gsm100 = parseFloat(this.container.querySelector('#ratePaperGsm100')?.value) || 1.0;
+            const spiral = parseFloat(this.container.querySelector('#rateBindingSpiral')?.value) || 30.0;
+            const staple = parseFloat(this.container.querySelector('#rateBindingStaple')?.value) || 5.0;
+            const newRates = {
+                ...state.pricing,
+                bwSingle,
+                bwDuplex,
+                colorSingle,
+                paper: {
+                    ...state.pricing.paper,
+                    gsm100
+                },
+                binding: {
+                    ...state.pricing.binding,
+                    spiral,
+                    staple
+                }
+            };
+            store.updatePricing(newRates);
+            alert('Custom per-page pricing saved! Applies instantly to all incoming customer orders.');
+        });
+        // Save Shop Config (Image 4)
+        const btnSaveShop = this.container.querySelector('#btnSaveShopConfig');
+        btnSaveShop?.addEventListener('click', () => {
+            const shopName = this.container.querySelector('#cfgShopName')?.value;
+            const address = this.container.querySelector('#cfgShopAddress')?.value;
+            const autoPrint = this.container.querySelector('#cfgAutoApprove')?.checked;
+            const autoCleanup = this.container.querySelector('#cfgAutoCleanup')?.checked;
+            store.updateShopConfig({
+                shopName,
+                address,
+                autoPrintOnApprove: autoPrint,
+                autoFileCleanup: autoCleanup
+            });
+            alert('Shop settings updated!');
+        });
+        // Save Payments
+        const btnSavePay = this.container.querySelector('#btnSavePayments');
+        btnSavePay?.addEventListener('click', () => {
+            const key = this.container.querySelector('#cfgRazorpayKey')?.value;
+            const upi = this.container.querySelector('#cfgUpiId')?.value;
+            store.updateShopConfig({
+                razorpayKeyId: key,
+                upiId: upi
+            });
+            alert('Razorpay payments configuration updated!');
+        });
+        // Run Full Simulation (Image 3)
+        const btnRunSim = this.container.querySelector('#btnRunFullSimulation');
+        btnRunSim?.addEventListener('click', () => {
+            this.runFullSimulation();
+        });
+    }
+    simulateCustomerOrder() {
+        const names = ['Meera Nair', 'Siddharth Roy', 'Harish Babu', 'Kavitha S.', 'Tanvi Gupta'];
+        const docs = [
+            { name: 'Semester_Project_Presentation.docx', type: 'docx', pages: 18, mode: 'color' },
+            { name: 'Internship_Certificate.pdf', type: 'pdf', pages: 1, mode: 'color' },
+            { name: 'Assignment_Unit_4.docx', type: 'docx', pages: 12, mode: 'mono' },
+            { name: 'Research_Paper_Draft.pdf', type: 'pdf', pages: 24, mode: 'mono' }
+        ];
+        const randomName = names[Math.floor(Math.random() * names.length)];
+        const randomDoc = docs[Math.floor(Math.random() * docs.length)];
+        store.createOrder({
+            fileName: randomDoc.name,
+            fileType: randomDoc.type,
+            isDocxConverted: randomDoc.type === 'docx',
+            fileSizeKb: Math.floor(Math.random() * 4000) + 800,
+            pageCount: randomDoc.pages,
+            rangeMode: 'all',
+            fromPage: 1,
+            toPage: randomDoc.pages,
+            pageRange: `All Pages (1-${randomDoc.pages})`,
+            bwPages: randomDoc.mode === 'mono' ? randomDoc.pages : 0,
+            colorPages: randomDoc.mode === 'color' ? randomDoc.pages : 0,
+            colorMode: randomDoc.mode,
+            duplex: true,
+            copies: 1,
+            paper: 'gsm75',
+            paperFormat: 'A4',
+            binding: 'none',
+            customerNotes: 'Simulated customer walk-in submission',
+            customer: {
+                name: randomName,
+                phone: `+91 9840${Math.floor(Math.random() * 89999 + 10000)}`
+            },
+            paymentMethod: 'RAZORPAY_UPI'
+        });
+    }
+    runFullSimulation() {
+        sound.success();
+        // Step 1 & 2: Simulate customer scanning and submitting order
+        const order = store.createOrder({
+            fileName: 'Campus_Thesis_Submission_Final.docx',
+            fileType: 'docx',
+            isDocxConverted: true,
+            fileSizeKb: 5400,
+            pageCount: 22,
+            rangeMode: 'all',
+            fromPage: 1,
+            toPage: 22,
+            pageRange: 'All Pages (1-22)',
+            bwPages: 22,
+            colorPages: 0,
+            colorMode: 'mono',
+            duplex: true,
+            copies: 1,
+            paper: 'gsm75',
+            paperFormat: 'A4',
+            binding: 'staple',
+            customerNotes: 'Automated 30-second live demonstration order',
+            customer: {
+                name: 'Arjun Das',
+                phone: '+91 98401 55667'
+            },
+            paymentMethod: 'RAZORPAY_UPI'
+        });
+        // Switch to orders tab
+        store.setAdminTab('orders');
+        // Step 3: Automatically trigger One-Click Approve & Print after 2 seconds
+        setTimeout(() => {
+            store.approveAndPrint(order.id);
+        }, 2000);
+    }
+    getFilteredOrders(state) {
+        switch (this.activeFilter) {
+            case 'pending':
+                return state.orders.filter(o => o.status === 'PENDING');
+            case 'printing':
+                return state.orders.filter(o => o.status === 'PRINTING');
+            case 'ready':
+                return state.orders.filter(o => o.status === 'READY');
+            case 'completed':
+                return state.orders.filter(o => o.status === 'COMPLETED');
+            case 'rejected':
+                return state.orders.filter(o => o.status === 'REJECTED');
+            default:
+                return [...state.orders];
+        }
+    }
+    formatTimeAgo(ts) {
+        const diff = Math.floor((Date.now() - ts) / 1000);
+        if (diff < 60)
+            return `${diff}s ago`;
+        if (diff < 3600)
+            return `${Math.floor(diff / 60)}m ago`;
+        return `${Math.floor(diff / 3600)}h ago`;
+    }
+    update(state) {
+        this.render(state);
+    }
 }

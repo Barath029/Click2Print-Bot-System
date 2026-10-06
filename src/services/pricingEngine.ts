@@ -1,30 +1,28 @@
 /**
  * Click2Print Pricing Engine
+ * Calculates itemized quote based on owner-configured rates.
  */
 
 import { PricingRates, PriceQuote, PaperGrade, PaperFormat, BindingType, ColorMode } from '../types/index.js';
 
 export const DEFAULT_RATES: PricingRates = {
-  bwSingle: 1.50,
-  bwDuplex: 2.00,
-  colorSingle: 8.00,
+  bwSingle: 2.00,
+  bwDuplex: 3.00, // ₹1.50 per side
+  colorSingle: 10.00,
   paper: {
     gsm75: 0.00,
-    gsm100: 0.50,
-    gsm250: 2.00
+    gsm100: 1.00,
+    gsm250: 3.00
   },
   paperFormat: {
     A4: 0.00,
-    A3: 3.00,
-    Legal: 0.50,
-    Letter: 0.00
+    A3: 5.00,
+    Legal: 1.00
   },
   binding: {
     none: 0.00,
-    staple: 0.00,
-    spiral: 30.00,
-    thermal: 60.00,
-    hardcover: 150.00
+    staple: 5.00,
+    spiral: 30.00
   }
 };
 
@@ -32,7 +30,11 @@ export class PricingEngine {
   private rates: PricingRates;
 
   constructor(rates: PricingRates = DEFAULT_RATES) {
-    this.rates = rates;
+    this.rates = { ...rates };
+  }
+
+  public setRates(rates: PricingRates): void {
+    this.rates = { ...rates };
   }
 
   public calculate(
@@ -44,8 +46,11 @@ export class PricingEngine {
     copies: number,
     paper: PaperGrade,
     paperFormat: PaperFormat = 'A4',
-    binding: BindingType
+    binding: BindingType,
+    customRates?: PricingRates
   ): PriceQuote {
+    const activeRates = customRates || this.rates;
+
     let effectiveBw = bwPages;
     let effectiveColor = colorPages;
 
@@ -63,20 +68,20 @@ export class PricingEngine {
     let bwCost = 0;
     if (duplex) {
       const bwSheets = Math.ceil(effectiveBw / 2);
-      bwCost = bwSheets * this.rates.bwDuplex;
+      bwCost = bwSheets * activeRates.bwDuplex;
     } else {
-      bwCost = effectiveBw * this.rates.bwSingle;
+      bwCost = effectiveBw * activeRates.bwSingle;
     }
 
-    const colorCost = effectiveColor * this.rates.colorSingle;
-    const paperPerSheet = this.rates.paper[paper] || 0;
+    const colorCost = effectiveColor * activeRates.colorSingle;
+    const paperPerSheet = activeRates.paper[paper] || 0;
     const paperCost = sheetsCount * paperPerSheet;
-    const formatPerSheet = this.rates.paperFormat[paperFormat] || 0;
+    const formatPerSheet = activeRates.paperFormat[paperFormat] || 0;
     const formatCost = sheetsCount * formatPerSheet;
-    const bindingCost = this.rates.binding[binding] || 0;
+    const bindingCost = activeRates.binding[binding] || 0;
 
     const subtotalPerCopy = bwCost + colorCost + paperCost + formatCost + bindingCost;
-    const grandTotal = Math.round(subtotalPerCopy * copies * 100) / 100;
+    const grandTotal = Math.max(1, Math.round(subtotalPerCopy * copies * 100) / 100);
 
     return {
       bwCost: Math.round(bwCost * copies * 100) / 100,

@@ -1,5 +1,6 @@
 /**
- * Click2Print UI Component: Header & Navigation Bar
+ * Click2Print Header Component
+ * Clean top navigation bar with role switching, shop status, and quick QR poster trigger.
  */
 
 import { store } from '../core/store.js';
@@ -16,53 +17,75 @@ export class HeaderComponent {
   }
 
   private render(state: SystemState): void {
+    const isCustomer = state.activeRole === 'customer';
     const isMuted = sound.isMuted();
-    const pendingCount = state.orders.filter(o => o.status === 'PENDING').length;
 
     this.container.innerHTML = `
-      <div class="header-container">
-        <!-- Brand Logo -->
-        <div class="brand-wrapper" id="btnBrandHome" title="Click2Print">
-          <div class="brand-logo-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="6 9 6 2 18 2 18 9"></polyline>
-              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-              <rect x="6" y="14" width="12" height="8" rx="1"></rect>
-            </svg>
-            <span class="brand-pulse-beacon"></span>
+      <div class="c2p-header-inner">
+        <!-- Brand Identity -->
+        <div class="header-brand">
+          <div class="brand-logo-mark">
+            <span class="printer-icon">🖨️</span>
           </div>
-          <div class="brand-identity">
-            <div class="brand-name-row">
-              <span class="brand-title">Click<span class="brand-accent">2</span>Print</span>
-              <span class="hub-pill">SAAS</span>
+          <div class="brand-text">
+            <div class="brand-title-row">
+              <h1 class="brand-name">Click2Print</h1>
+              <span class="brand-badge">PRO STATION</span>
             </div>
-            <div class="brand-subtitle">
-              <span class="live-dot"></span>
-              <span>Smart Print Order Management</span>
-            </div>
+            <p class="brand-sub">${state.shop.shopName}</p>
           </div>
         </div>
 
-        <!-- Role Navigator -->
-        <nav class="role-nav-bar" id="roleNavBar">
-          <button class="nav-tab-btn ${state.activeRole === 'customer' ? 'active' : ''}" data-role="customer">
-            <span class="tab-icon">📄</span>
-            <span class="tab-text">Place Order</span>
+        <!-- Role & View Switcher -->
+        <nav class="header-nav-tabs" role="tablist">
+          <button
+            class="nav-tab-btn ${isCustomer ? 'active' : ''}"
+            id="btnRoleCustomer"
+            type="button"
+            role="tab"
+            aria-selected="${isCustomer}">
+            <span class="tab-icon">📱</span>
+            <span class="tab-label">Customer Portal</span>
+            <span class="tab-sub">Scan & Print (<60s)</span>
           </button>
-          <button class="nav-tab-btn ${state.activeRole === 'owner' ? 'active' : ''}" data-role="owner">
-            <span class="tab-icon">🏪</span>
-            <span class="tab-text">Shop Dashboard</span>
-            <span class="tab-badge queue-badge ${pendingCount > 0 ? 'visible' : ''}" id="navPendingBadge">${pendingCount}</span>
+
+          <button
+            class="nav-tab-btn ${!isCustomer ? 'active' : ''}"
+            id="btnRoleAdmin"
+            type="button"
+            role="tab"
+            aria-selected="${!isCustomer}">
+            <span class="tab-icon">🖥️</span>
+            <span class="tab-label">Shop Owner Dashboard</span>
+            <span class="tab-sub">Live Orders & Setup</span>
+            ${state.orders.filter(o => o.status === 'PENDING').length > 0 ? `
+              <span class="tab-counter-pill">${state.orders.filter(o => o.status === 'PENDING').length}</span>
+            ` : ''}
           </button>
         </nav>
 
-        <!-- Utilities -->
+        <!-- Right Quick Actions -->
         <div class="header-actions">
-          <button class="utility-icon-btn" id="btnSoundToggle" title="Toggle Audio">
-            <span id="soundIcon">${isMuted ? '🔇' : '🔊'}</span>
+          <!-- Status Pill -->
+          <div class="shop-live-pill" title="Hardware auto-routing active: B&W -> LaserJet, Colour -> PIXMA">
+            <span class="live-dot pulse"></span>
+            <span class="live-text">Shop Online</span>
+          </div>
+
+          <!-- Print Shop QR Button -->
+          <button class="btn-clean-secondary" id="btnHeaderShopQR" type="button" title="Print Shop QR Poster for Counter">
+            <span class="btn-icon">🔲</span>
+            <span class="btn-text">Shop QR Poster</span>
           </button>
-          <button class="utility-icon-btn" id="btnResetDemo" title="Reset Demo Data">
-            <span>🔄</span>
+
+          <!-- Audio Mute Toggle -->
+          <button class="icon-toggle-btn" id="btnAudioToggle" type="button" title="${isMuted ? 'Unmute Audio' : 'Mute Audio'}">
+            ${isMuted ? '🔇' : '🔔'}
+          </button>
+
+          <!-- Reset Demo Data -->
+          <button class="icon-toggle-btn" id="btnResetData" type="button" title="Reset Demo Data">
+            🔄
           </button>
         </div>
       </div>
@@ -72,63 +95,38 @@ export class HeaderComponent {
   }
 
   private bindEvents(): void {
-    // Role switcher
-    this.container.querySelectorAll('.nav-tab-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const target = (e.currentTarget as HTMLElement).dataset.role as SystemState['activeRole'];
-        if (target) {
-          store.setActiveRole(target);
-        }
-      });
+    const btnCustomer = this.container.querySelector('#btnRoleCustomer');
+    const btnAdmin = this.container.querySelector('#btnRoleAdmin');
+    const btnQR = this.container.querySelector('#btnHeaderShopQR');
+    const btnAudio = this.container.querySelector('#btnAudioToggle');
+    const btnReset = this.container.querySelector('#btnResetData');
+
+    btnCustomer?.addEventListener('click', () => {
+      store.setActiveRole('customer');
     });
 
-    // Brand logo home
-    const brandHome = this.container.querySelector('#btnBrandHome');
-    if (brandHome) {
-      brandHome.addEventListener('click', () => {
-        store.setActiveRole('customer');
-      });
-    }
+    btnAdmin?.addEventListener('click', () => {
+      store.setActiveRole('admin');
+    });
 
-    // Sound toggle
-    const soundBtn = this.container.querySelector('#btnSoundToggle');
-    if (soundBtn) {
-      soundBtn.addEventListener('click', () => {
-        const muted = sound.toggleMute();
-        const icon = this.container.querySelector('#soundIcon');
-        if (icon) icon.textContent = muted ? '🔇' : '🔊';
-        if (!muted) sound.click();
-      });
-    }
+    btnQR?.addEventListener('click', () => {
+      sound.click();
+      window.dispatchEvent(new CustomEvent('open-shop-qr-modal'));
+    });
 
-    // Reset demo
-    const resetBtn = this.container.querySelector('#btnResetDemo');
-    if (resetBtn) {
-      resetBtn.addEventListener('click', () => {
-        if (confirm('Reset Click2Print to default demo data?')) {
-          store.resetData();
-        }
-      });
-    }
-  }
+    btnAudio?.addEventListener('click', () => {
+      sound.toggleMute();
+      this.update(store.getState());
+    });
 
-  public update(state: SystemState): void {
-    // Update active tab highlighting
-    this.container.querySelectorAll('.nav-tab-btn').forEach(btn => {
-      const role = (btn as HTMLElement).dataset.role;
-      if (role === state.activeRole) {
-        btn.classList.add('active');
-      } else {
-        btn.classList.remove('active');
+    btnReset?.addEventListener('click', () => {
+      if (confirm('Reset all demo orders and counters to initial state?')) {
+        store.resetData();
       }
     });
+  }
 
-    // Update pending badge
-    const pendingBadge = this.container.querySelector('#navPendingBadge');
-    if (pendingBadge) {
-      const pendingCount = state.orders.filter(o => o.status === 'PENDING').length;
-      pendingBadge.textContent = String(pendingCount);
-      pendingBadge.classList.toggle('visible', pendingCount > 0);
-    }
+  private update(state: SystemState): void {
+    this.render(state);
   }
 }

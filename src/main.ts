@@ -1,80 +1,76 @@
 /**
- * SmartPrint Application Orchestrator & Lifecycle Bootstrap
+ * Click2Print Application Orchestrator & Lifecycle Bootstrap
  * Pure TypeScript & Clean Architecture
+ * Complete product flow:
+ * 1. Customer Scans QR Code
+ * 2. Uploads Document & Selects Options
+ * 3. Shop Owner Approves on Dashboard
+ * 4. Auto-Print & Auto-Delete
  */
 
 import { store } from './core/store.js';
 import { HeaderComponent } from './components/Header.js';
-import { TelemetryHUDComponent } from './components/TelemetryHUD.js';
-import { StudentStudioComponent } from './components/StudentStudio.js';
-import { VendorConsoleComponent } from './components/VendorConsole.js';
-import { RackMatrixComponent } from './components/RackMatrix.js';
-import { KioskTerminalComponent } from './components/KioskTerminal.js';
-import { AdminLedgerComponent } from './components/AdminLedger.js';
-import { ArchitectureExplorerComponent } from './components/ArchitectureExplorer.js';
+import { CustomerOrderComponent } from './components/CustomerOrder.js';
+import { OwnerDashboardComponent } from './components/OwnerDashboard.js';
 import { ModalsComponent } from './components/Modals.js';
 import { SystemState } from './types/index.js';
 
-class SmartPrintApp {
+class Click2PrintApp {
   private headerEl: HTMLElement;
-  private hudEl: HTMLElement;
-  private studentViewEl: HTMLElement;
-  private vendorViewEl: HTMLElement;
-  private rackViewEl: HTMLElement;
-  private kioskViewEl: HTMLElement;
+  private customerViewEl: HTMLElement;
   private adminViewEl: HTMLElement;
-  private archViewEl: HTMLElement;
-
-  private studentStudio!: StudentStudioComponent;
 
   constructor() {
     this.headerEl = document.getElementById('appHeader')!;
-    this.hudEl = document.getElementById('appTelemetryHUD')!;
-    this.studentViewEl = document.getElementById('studentSection')!;
-    this.vendorViewEl = document.getElementById('vendorSection')!;
-    this.rackViewEl = document.getElementById('rackSection')!;
-    this.kioskViewEl = document.getElementById('kioskSection')!;
+    this.customerViewEl = document.getElementById('customerSection')!;
     this.adminViewEl = document.getElementById('adminSection')!;
-    this.archViewEl = document.getElementById('architectureSection')!;
 
     this.init();
   }
 
   private init(): void {
-    console.log('🚀 Initializing SmartPrint Platform Architecture (TypeScript + Node.js)...');
+    console.log('🚀 Initializing Click2Print Cloud Automation System (TypeScript + Node.js)...');
 
-    // Mount Header & Telemetry HUD
+    // Mount Header
     new HeaderComponent(this.headerEl);
-    new TelemetryHUDComponent(this.hudEl);
 
-    // Mount Views
-    this.studentStudio = new StudentStudioComponent(this.studentViewEl);
-    new VendorConsoleComponent(this.vendorViewEl);
-    new RackMatrixComponent(this.rackViewEl);
-    new KioskTerminalComponent(this.kioskViewEl);
-    new AdminLedgerComponent(this.adminViewEl);
-    new ArchitectureExplorerComponent(this.archViewEl);
+    // Mount Customer & Admin views
+    new CustomerOrderComponent(this.customerViewEl);
+    new OwnerDashboardComponent(this.adminViewEl);
 
     // Mount Modals
-    new ModalsComponent(this.studentStudio);
+    new ModalsComponent();
 
-    // Synchronize view switching
+    // Setup global modal close buttons
+    document.querySelectorAll('.modal-close-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const overlay = (e.target as HTMLElement).closest('.modal-overlay');
+        overlay?.classList.remove('active');
+      });
+    });
+
+    // Close on clicking backdrop
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          overlay.classList.remove('active');
+        }
+      });
+    });
+
+    // Synchronize view switching between Customer and Admin
     store.subscribe((state) => this.onStateChange(state));
     this.onStateChange(store.getState());
 
-    console.log('✅ SmartPrint Platform Architecture Mounted Successfully.');
+    console.log('✅ Click2Print Platform Mounted Successfully.');
   }
 
   private onStateChange(state: SystemState): void {
-    const role = state.activeRole;
+    const isCustomer = state.activeRole === 'customer';
 
-    // Toggle view sections
-    this.studentViewEl.classList.toggle('active', role === 'student');
-    this.vendorViewEl.classList.toggle('active', role === 'vendor');
-    this.rackViewEl.classList.toggle('active', role === 'rack');
-    this.kioskViewEl.classList.toggle('active', role === 'kiosk');
-    this.adminViewEl.classList.toggle('active', role === 'admin');
-    this.archViewEl.classList.toggle('active', role === 'architecture');
+    // Toggle active view sections
+    this.customerViewEl.classList.toggle('active', isCustomer);
+    this.adminViewEl.classList.toggle('active', !isCustomer);
 
     // Scroll to top smoothly
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -83,5 +79,5 @@ class SmartPrintApp {
 
 // Bootstrap on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
-  new SmartPrintApp();
+  new Click2PrintApp();
 });
