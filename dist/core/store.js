@@ -258,9 +258,19 @@ class Click2PrintStore {
         }
     }
     setActiveRole(role) {
-        if (role === 'admin' && !this.state.isAdminAuthenticated) {
-            window.dispatchEvent(new CustomEvent('open-admin-login-modal'));
-            return;
+        if (role === 'admin') {
+            if (typeof window !== 'undefined' && window.location.pathname !== '/admin') {
+                window.history.pushState(null, '', '/admin');
+            }
+            if (!this.state.isAdminAuthenticated) {
+                window.dispatchEvent(new CustomEvent('open-admin-login-modal'));
+                return;
+            }
+        }
+        else {
+            if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+                window.history.pushState(null, '', '/');
+            }
         }
         this.state.activeRole = role;
         sound.click();
@@ -272,6 +282,9 @@ class Click2PrintStore {
             this.state.isAdminAuthenticated = true;
             this.state.adminUser = 'admin';
             this.state.activeRole = 'admin';
+            if (typeof window !== 'undefined' && window.location.pathname !== '/admin') {
+                window.history.pushState(null, '', '/admin');
+            }
             eventBus.emit('SECURITY', 'Admin Login Successful', 'Authenticated as admin', 'SUCCESS');
             sound.success();
             this.notify();
@@ -287,6 +300,9 @@ class Click2PrintStore {
         localStorage.removeItem('c2p_admin_auth');
         this.state.isAdminAuthenticated = false;
         this.state.activeRole = 'customer';
+        if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+            window.history.pushState(null, '', '/');
+        }
         eventBus.emit('SECURITY', 'Admin Signed Out', 'Signed out from admin dashboard', 'INFO');
         sound.click();
         this.notify();

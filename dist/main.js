@@ -48,7 +48,24 @@ class Click2PrintApp {
         });
         // Synchronize view switching between Customer and Admin
         store.subscribe((state) => this.onStateChange(state));
-        this.onStateChange(store.getState());
+        // Route detection on initial load (/admin vs /)
+        const currentPath = window.location.pathname;
+        if (currentPath.startsWith('/admin')) {
+            store.setActiveRole('admin');
+        }
+        else {
+            this.onStateChange(store.getState());
+        }
+        // Handle browser navigation (Back / Forward)
+        window.addEventListener('popstate', () => {
+            const path = window.location.pathname;
+            if (path.startsWith('/admin')) {
+                store.setActiveRole('admin');
+            }
+            else {
+                store.setActiveRole('customer');
+            }
+        });
         console.log('✅ Click2Print Platform Mounted Successfully.');
     }
     onStateChange(state) {
