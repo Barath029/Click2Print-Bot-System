@@ -275,7 +275,7 @@ class Click2PrintStore {
         const orderId = `ORD-${orderNum}`;
         const quote = pricingEngine.calculate(draft.pageCount, draft.colorPages, draft.bwPages, draft.colorMode, draft.duplex, draft.copies, draft.paper, draft.paperFormat, draft.binding, this.state.pricing);
         // Auto-Routing: B&W orders go to B&W printer, color orders go to colour printer
-        const isColor = draft.colorMode === 'color' || (draft.colorMode === 'smart' && draft.colorPages > 0);
+        const isColor = draft.colorMode === 'color';
         const routedPrinter = isColor ? 'COLOUR_PRINTER' : 'BW_PRINTER';
         const newOrder = {
             id: orderId,

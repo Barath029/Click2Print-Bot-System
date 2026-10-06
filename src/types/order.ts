@@ -9,7 +9,7 @@
 
 export type OrderStatus = 'PENDING' | 'APPROVED' | 'PRINTING' | 'READY' | 'COMPLETED' | 'REJECTED';
 
-export type ColorMode = 'mono' | 'color' | 'smart';
+export type ColorMode = 'mono' | 'color';
 
 export type PaperGrade = 'gsm75' | 'gsm100' | 'gsm250';
 

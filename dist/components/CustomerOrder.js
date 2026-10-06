@@ -8,7 +8,6 @@
  */
 import { store } from '../core/store.js';
 import { pricingEngine } from '../services/pricingEngine.js';
-import { colorAnalyzer } from '../services/colorAnalyzer.js';
 import { sound } from '../core/audio.js';
 export class CustomerOrderComponent {
     container;
@@ -22,9 +21,9 @@ export class CustomerOrderComponent {
         fromPage: 1,
         toPage: 16,
         pageRange: 'All Pages (1-16)',
-        bwPages: 14,
-        colorPages: 2,
-        colorMode: 'smart',
+        bwPages: 16,
+        colorPages: 0,
+        colorMode: 'mono',
         duplex: true,
         copies: 1,
         paper: 'gsm75',
@@ -54,9 +53,14 @@ export class CustomerOrderComponent {
     }
     render(state) {
         const effectivePages = this.getEffectivePageCount();
-        const analysis = colorAnalyzer.analyzeDocument(this.currentDraft.fileName, effectivePages);
-        this.currentDraft.colorPages = analysis.colorPagesCount;
-        this.currentDraft.bwPages = analysis.bwPagesCount;
+        if (this.currentDraft.colorMode === 'color') {
+            this.currentDraft.colorPages = effectivePages;
+            this.currentDraft.bwPages = 0;
+        }
+        else {
+            this.currentDraft.colorPages = 0;
+            this.currentDraft.bwPages = effectivePages;
+        }
         const quote = pricingEngine.calculate(effectivePages, this.currentDraft.colorPages, this.currentDraft.bwPages, this.currentDraft.colorMode, this.currentDraft.duplex, this.currentDraft.copies, this.currentDraft.paper, this.currentDraft.paperFormat, this.currentDraft.binding, state.pricing);
         // Active customer order for live tracking
         const activeOrder = state.orders.find(o => o.id === state.activeCustomerOrderId) || state.orders[0];
@@ -171,31 +175,6 @@ export class CustomerOrderComponent {
                   </div>
                 `}
               </div>
-
-              <!-- Visual Chromatic Page-by-Page Breakdown Strip -->
-              <div class="chromatic-strip-card">
-                <div class="chromatic-strip-header">
-                  <div class="chromatic-header-left">
-                    <span class="chromatic-sparkle-icon">✨</span>
-                    <strong class="chromatic-header-title">Smart Chromatic Page Analysis</strong>
-                    <span class="chromatic-tag">${analysis.colorPagesCount} Colour Pages • ${analysis.bwPagesCount} B&W Pages</span>
-                  </div>
-                  <div class="chromatic-savings-badge">
-                    <span>💡 Smart Auto-Detect Saves ₹${analysis.savingsAmount}</span>
-                  </div>
-                </div>
-
-                <div class="chromatic-pages-grid">
-                  ${analysis.pageBreakdown.slice(0, 16).map(p => `
-                    <div class="chromatic-page-chip ${p.isColor ? 'is-color' : 'is-bw'}" title="Page ${p.pageNumber}: ${p.description}">
-                      <span class="chip-pg-num">p.${p.pageNumber}</span>
-                      <span class="chip-dot"></span>
-                      <span class="chip-type">${p.isColor ? 'COLOR' : 'B&W'}</span>
-                    </div>
-                  `).join('')}
-                  ${effectivePages > 16 ? `<div class="chromatic-more-chip">+${effectivePages - 16} more pages</div>` : ''}
-                </div>
-              </div>
             </div>
 
             <!-- STEP 2: Configure Print Options -->
@@ -233,15 +212,6 @@ export class CustomerOrderComponent {
                       <div class="mode-body">
                         <strong class="mode-title">Full Colour Print</strong>
                         <span class="mode-desc">Routes to Dedicated Canon EcoTank • ₹${state.pricing.colorSingle.toFixed(2)}/pg</span>
-                      </div>
-                    </label>
-
-                    <label class="mode-option-card ${this.currentDraft.colorMode === 'smart' ? 'selected' : ''}">
-                      <input type="radio" name="colorMode" value="smart" ${this.currentDraft.colorMode === 'smart' ? 'checked' : ''}>
-                      <span class="mode-icon">💡</span>
-                      <div class="mode-body">
-                        <strong class="mode-title">Smart Auto-Detect</strong>
-                        <span class="mode-desc">Auto-charges colour only for colour pages (${analysis.colorPagesCount} colour, ${analysis.bwPagesCount} B&W)</span>
                       </div>
                     </label>
                   </div>
@@ -697,7 +667,7 @@ export class CustomerOrderComponent {
             this.currentDraft.fileType = 'docx';
             this.currentDraft.isDocxConverted = true;
             this.currentDraft.pageCount = 16;
-            this.currentDraft.colorMode = 'smart';
+            this.currentDraft.colorMode = 'mono';
             this.currentDraft.duplex = true;
             this.currentDraft.copies = 1;
         }

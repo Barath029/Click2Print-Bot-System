@@ -317,7 +317,7 @@ class Click2PrintStore {
     );
 
     // Auto-Routing: B&W orders go to B&W printer, color orders go to colour printer
-    const isColor = draft.colorMode === 'color' || (draft.colorMode === 'smart' && draft.colorPages > 0);
+    const isColor = draft.colorMode === 'color';
     const routedPrinter: 'BW_PRINTER' | 'COLOUR_PRINTER' = isColor ? 'COLOUR_PRINTER' : 'BW_PRINTER';
 
     const newOrder: PrintOrder = {
