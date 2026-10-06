@@ -2,12 +2,10 @@
   "name": "smartprint-automation-system",
   "version": "1.0.0",
   "description": "SmartPrint: Institutional Print Queue Automation & Rack Logistics System",
-  "main": "scripts/dev-server.js",
   "scripts": {
     "build": "node ./node_modules/typescript/lib/tsc.js",
     "watch": "tsc --watch",
-    "dev": "node ./node_modules/typescript/lib/tsc.js && node scripts/dev-server.js",
-    "start": "node scripts/dev-server.js"
+    "dev": "node ./node_modules/typescript/lib/tsc.js && node scripts/dev-server.js"
   },
   "keywords": [
     "smartprint",
