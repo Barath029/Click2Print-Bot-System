@@ -91,10 +91,10 @@ export class CustomerOrderComponent {
       state.pricing
     );
 
-    // Active customer order for live tracking
+    // Active customer order for live tracking (syncs with customer's active placed order)
     const activeOrder: PrintOrder | undefined = state.orders.find(
       o => o.id === state.activeCustomerOrderId
-    ) || state.orders[0];
+    );
 
     this.container.innerHTML = `
       <div class="customer-portal-view">

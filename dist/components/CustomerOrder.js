@@ -62,8 +62,8 @@ export class CustomerOrderComponent {
             this.currentDraft.bwPages = effectivePages;
         }
         const quote = pricingEngine.calculate(effectivePages, this.currentDraft.colorPages, this.currentDraft.bwPages, this.currentDraft.colorMode, this.currentDraft.duplex, this.currentDraft.copies, this.currentDraft.paper, this.currentDraft.paperFormat, this.currentDraft.binding, state.pricing);
-        // Active customer order for live tracking
-        const activeOrder = state.orders.find(o => o.id === state.activeCustomerOrderId) || state.orders[0];
+        // Active customer order for live tracking (syncs with customer's active placed order)
+        const activeOrder = state.orders.find(o => o.id === state.activeCustomerOrderId);
         this.container.innerHTML = `
       <div class="customer-portal-view">
 

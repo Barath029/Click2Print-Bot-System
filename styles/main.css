@@ -1295,6 +1295,7 @@ button, input, select, textarea {
 .price-quote-card {
   position: sticky;
   top: 5rem;
+  z-index: 10;
   background: #ffffff;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-card);
@@ -1475,6 +1476,8 @@ button, input, select, textarea {
    LIVE ORDER STATUS TRACKER
    ========================================================================== */
 .live-tracker-card {
+  position: relative;
+  z-index: 5;
   margin-top: 1.5rem;
   background: #ffffff;
   border-radius: var(--radius-lg);
@@ -1568,6 +1571,7 @@ button, input, select, textarea {
   justify-content: space-between;
   margin: 1.5rem 0 1.25rem;
   position: relative;
+  z-index: 1;
 }
 
 .step-point {
@@ -1615,7 +1619,8 @@ button, input, select, textarea {
   flex: 1;
   height: 3px;
   background: #e2e8f0;
-  margin: 0 -4px 18px;
+  margin: 0;
+  transform: translateY(-10px);
   position: relative;
   z-index: 1;
 }
