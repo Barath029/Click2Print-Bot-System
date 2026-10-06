@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 3000;
-const BASE_DIR = __dirname;
+const BASE_DIR = path.join(__dirname, '..');
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -64,7 +64,7 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, () => {
   console.log(`\n======================================================`);
-  console.log(`🚀 SmartPrint Institutional Hub running at:`);
+  console.log(`🚀 Click2Print Local Dev Server running at:`);
   console.log(`   👉 http://localhost:${PORT}`);
   console.log(`======================================================\n`);
 });

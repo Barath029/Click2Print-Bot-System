@@ -8,7 +8,22 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles/main.css">
+  <link rel="stylesheet" href="./styles/main.css">
+  <style>
+    /* Critical path defensive modal containment */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1000;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+  </style>
 </head>
 <body>
 
@@ -124,6 +139,6 @@
   <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
   <!-- Compiled TypeScript ES2022 Standard Module Entry Point -->
-  <script type="module" src="dist/main.js"></script>
+  <script type="module" src="./dist/main.js"></script>
 </body>
 </html>
