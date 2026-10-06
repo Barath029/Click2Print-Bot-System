@@ -134,6 +134,8 @@ export interface ShopConfig {
   phone: string;
   address: string;
   razorpayKeyId: string;
+  razorpayKeySecret?: string;
+  razorpayMode?: 'test' | 'live';
   autoPrintOnApprove: boolean;
   autoFileCleanup: boolean;
 }
@@ -172,6 +174,8 @@ export type AdminTab = 'orders' | 'printers' | 'usage' | 'how-it-works';
 export interface SystemState {
   activeRole: 'customer' | 'admin';
   adminTab: AdminTab;
+  isAdminAuthenticated: boolean;
+  adminUser: string;
   shop: ShopConfig;
   bwPrinter: PrinterDevice;
   colorPrinter: PrinterDevice;

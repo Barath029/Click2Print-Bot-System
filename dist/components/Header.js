@@ -66,6 +66,13 @@ export class HeaderComponent {
             <span class="live-text">Shop Online</span>
           </div>
 
+          ${state.isAdminAuthenticated ? `
+            <div class="admin-session-badge" style="display: flex; align-items: center; gap: 8px; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 20px; font-size: 0.8125rem; font-weight: 600; color: #047857;">
+              <span>🛡️ Admin (${state.adminUser || 'admin'})</span>
+              <button id="btnAdminLogout" type="button" title="Sign Out of Admin" style="background: transparent; border: none; cursor: pointer; color: #065f46; font-weight: 700; font-size: 0.8125rem; padding: 0 4px;">Sign Out</button>
+            </div>
+          ` : ''}
+
           <!-- Print Shop QR Button -->
           <button class="btn-clean-secondary" id="btnHeaderShopQR" type="button" title="Print Shop QR Poster for Counter">
             <span class="btn-icon">🔲</span>
@@ -89,6 +96,7 @@ export class HeaderComponent {
     bindEvents() {
         const btnCustomer = this.container.querySelector('#btnRoleCustomer');
         const btnAdmin = this.container.querySelector('#btnRoleAdmin');
+        const btnLogout = this.container.querySelector('#btnAdminLogout');
         const btnQR = this.container.querySelector('#btnHeaderShopQR');
         const btnAudio = this.container.querySelector('#btnAudioToggle');
         const btnReset = this.container.querySelector('#btnResetData');
@@ -97,6 +105,10 @@ export class HeaderComponent {
         });
         btnAdmin?.addEventListener('click', () => {
             store.setActiveRole('admin');
+        });
+        btnLogout?.addEventListener('click', () => {
+            sound.click();
+            store.logoutAdmin();
         });
         btnQR?.addEventListener('click', () => {
             sound.click();

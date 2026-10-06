@@ -25,6 +25,15 @@ export class ModalsComponent {
             const detail = e.detail;
             this.openRazorpayModal(detail.draft, detail.onSuccess);
         });
+        window.addEventListener('open-admin-login-modal', () => {
+            this.openAdminLoginModal();
+        });
+        // Close on overlay close buttons
+        document.querySelectorAll('.modal-close-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.closeAllModals();
+            });
+        });
         // Close on escape key
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
@@ -252,6 +261,81 @@ export class ModalsComponent {
                     onSuccess(order);
                     sound.success();
                 }, 800);
+            });
+        }
+        modalEl.classList.add('active');
+    }
+    /**
+     * Admin Security Login Modal
+     */
+    openAdminLoginModal() {
+        const modalEl = document.getElementById('adminLoginModal');
+        if (!modalEl)
+            return;
+        const body = modalEl.querySelector('#adminLoginModalBody');
+        if (body) {
+            body.innerHTML = `
+        <div class="admin-login-modal-content" style="padding: 12px 0;">
+          <div style="text-align: center; margin-bottom: 20px;">
+            <div style="font-size: 3rem; margin-bottom: 8px;">🔐</div>
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: #0f172a; margin: 0 0 4px 0;">Shop Owner Authentication</h3>
+            <p style="font-size: 0.875rem; color: #64748b; margin: 0;">Please enter your admin credentials to access live order monitoring and system control.</p>
+          </div>
+
+          <form id="adminLoginForm" onsubmit="return false;" style="display: flex; flex-direction: column; gap: 16px;">
+            <div id="adminLoginErrorMsg" style="display: none; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 10px 14px; borderRadius: 8px; font-size: 0.875rem; font-weight: 500;"></div>
+
+            <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+              <label for="txtAdminUsername" style="font-size: 0.875rem; font-weight: 600; color: #334155;">Admin Username</label>
+              <input type="text" id="txtAdminUsername" class="c2p-input" placeholder="e.g. admin" value="admin" style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem;" required />
+            </div>
+
+            <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+              <label for="txtAdminPassword" style="font-size: 0.875rem; font-weight: 600; color: #334155;">Admin Password</label>
+              <input type="password" id="txtAdminPassword" class="c2p-input" placeholder="e.g. password123" value="password123" style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem;" required />
+            </div>
+
+            <div style="background: #f8fafc; border: 1px dashed #cbd5e1; padding: 10px 14px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 0.8125rem;">
+              <span style="color: #475569;">Key Credentials: <strong>admin</strong> / <strong>password123</strong></span>
+              <button type="button" id="btnAutofillAdminCredentials" class="btn-clean-secondary" style="padding: 4px 10px; font-size: 0.75rem;">Autofill</button>
+            </div>
+
+            <button type="submit" id="btnSubmitAdminLogin" class="btn-primary-action full-width" style="margin-top: 8px;">
+              🔐 Unlock Admin Dashboard
+            </button>
+          </form>
+        </div>
+      `;
+            const form = body.querySelector('#adminLoginForm');
+            const errorMsg = body.querySelector('#adminLoginErrorMsg');
+            const autofillBtn = body.querySelector('#btnAutofillAdminCredentials');
+            const usernameInput = body.querySelector('#txtAdminUsername');
+            const passwordInput = body.querySelector('#txtAdminPassword');
+            autofillBtn?.addEventListener('click', () => {
+                usernameInput.value = 'admin';
+                passwordInput.value = 'password123';
+                if (errorMsg)
+                    errorMsg.style.display = 'none';
+            });
+            form?.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const username = usernameInput.value.trim();
+                const password = passwordInput.value;
+                const success = store.loginAdmin(username, password);
+                if (success) {
+                    if (errorMsg)
+                        errorMsg.style.display = 'none';
+                    modalEl.classList.remove('active');
+                    sound.success();
+                    store.setActiveRole('admin');
+                }
+                else {
+                    sound.error();
+                    if (errorMsg) {
+                        errorMsg.textContent = '❌ Invalid Credentials. Username must be "admin" & Password "password123".';
+                        errorMsg.style.display = 'block';
+                    }
+                }
             });
         }
         modalEl.classList.add('active');

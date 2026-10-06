@@ -61,7 +61,9 @@ class Click2PrintStore {
       upiId: 'click2print@icici',
       phone: '+91 98401 23450',
       address: 'Shop #14, Main Student Complex, Opp. Tech Gate',
-      razorpayKeyId: 'rzp_live_c2pprt_9941',
+      razorpayKeyId: 'rzp_live_Click2Print_8820492',
+      razorpayKeySecret: 'rzp_sec_Click2Print_Merchant2026',
+      razorpayMode: 'live',
       autoPrintOnApprove: true,
       autoFileCleanup: true
     };
@@ -238,6 +240,8 @@ class Click2PrintStore {
     return {
       activeRole: 'customer',
       adminTab: 'orders',
+      isAdminAuthenticated: localStorage.getItem('c2p_admin_auth') === 'true',
+      adminUser: 'admin',
       shop,
       bwPrinter,
       colorPrinter,
@@ -280,8 +284,47 @@ class Click2PrintStore {
   }
 
   public setActiveRole(role: 'customer' | 'admin'): void {
+    if (role === 'admin' && !this.state.isAdminAuthenticated) {
+      window.dispatchEvent(new CustomEvent('open-admin-login-modal'));
+      return;
+    }
     this.state.activeRole = role;
     sound.click();
+    this.notify();
+  }
+
+  public loginAdmin(username: string, pass: string): boolean {
+    if (username.trim() === 'admin' && pass === 'password123') {
+      localStorage.setItem('c2p_admin_auth', 'true');
+      this.state.isAdminAuthenticated = true;
+      this.state.adminUser = 'admin';
+      this.state.activeRole = 'admin';
+      eventBus.emit('SECURITY', 'Admin Login Successful', 'Authenticated as admin', 'SUCCESS');
+      sound.success();
+      this.notify();
+      return true;
+    } else {
+      eventBus.emit('SECURITY', 'Admin Login Failed', 'Invalid username or password entered', 'ALERT');
+      sound.error();
+      return false;
+    }
+  }
+
+  public logoutAdmin(): void {
+    localStorage.removeItem('c2p_admin_auth');
+    this.state.isAdminAuthenticated = false;
+    this.state.activeRole = 'customer';
+    eventBus.emit('SECURITY', 'Admin Signed Out', 'Signed out from admin dashboard', 'INFO');
+    sound.click();
+    this.notify();
+  }
+
+  public updateRazorpayConfig(keyId: string, keySecret: string, mode: 'test' | 'live'): void {
+    this.state.shop.razorpayKeyId = keyId;
+    this.state.shop.razorpayKeySecret = keySecret;
+    this.state.shop.razorpayMode = mode;
+    eventBus.emit('SYSTEM', 'Razorpay Merchant Updated', `Merchant Key ID set to ${keyId} (${mode.toUpperCase()} Mode)`, 'SUCCESS');
+    sound.success();
     this.notify();
   }
 

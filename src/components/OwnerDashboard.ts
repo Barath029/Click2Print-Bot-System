@@ -863,18 +863,31 @@ export class OwnerDashboardComponent {
               </div>
 
               <div class="form-group">
+                <label class="form-label" for="cfgRazorpaySecret">Razorpay Merchant Key Secret:</label>
+                <input type="password" id="cfgRazorpaySecret" class="clean-input" value="${state.shop.razorpayKeySecret || ''}" placeholder="rzp_secret_...">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="cfgRazorpayMode">Gateway Operating Mode:</label>
+                <select id="cfgRazorpayMode" class="clean-select">
+                  <option value="test" ${state.shop.razorpayMode === 'test' ? 'selected' : ''}>Test / Sandbox Mode (Simulated Payments)</option>
+                  <option value="live" ${state.shop.razorpayMode === 'live' ? 'selected' : ''}>Live Production Merchant Mode</option>
+                </select>
+              </div>
+
+              <div class="form-group">
                 <label class="form-label" for="cfgUpiId">Counter Merchant UPI VPA:</label>
                 <input type="text" id="cfgUpiId" class="clean-input" value="${state.shop.upiId}">
               </div>
 
               <div class="payment-features-list">
-                <div class="p-feat-item">✓ Instant payment confirmation hook</div>
+                <div class="p-feat-item">✓ Instant payment confirmation hook with auto-print trigger</div>
                 <div class="p-feat-item">✓ Real-time QR code display for mobile customers</div>
                 <div class="p-feat-item">✓ Automatic refund trigger if order is rejected</div>
               </div>
 
               <button type="button" class="btn-clean-primary" id="btnSavePayments">
-                <span>Save Payment Integration</span>
+                <span>Save Payment Integration & Merchant Key</span>
               </button>
             </div>
           </div>
@@ -1176,12 +1189,13 @@ export class OwnerDashboardComponent {
     const btnSavePay = this.container.querySelector('#btnSavePayments');
     btnSavePay?.addEventListener('click', () => {
       const key = (this.container.querySelector('#cfgRazorpayKey') as HTMLInputElement)?.value;
+      const secret = (this.container.querySelector('#cfgRazorpaySecret') as HTMLInputElement)?.value;
+      const mode = (this.container.querySelector('#cfgRazorpayMode') as HTMLSelectElement)?.value as 'live' | 'test';
       const upi = (this.container.querySelector('#cfgUpiId') as HTMLInputElement)?.value;
-      store.updateShopConfig({
-        razorpayKeyId: key,
-        upiId: upi
-      });
-      alert('Razorpay payments configuration updated!');
+
+      store.updateRazorpayConfig(key, secret, mode);
+      store.updateShopConfig({ upiId: upi });
+      alert('Razorpay payments & merchant credentials configuration saved successfully!');
     });
 
     // Run Full Simulation (Image 3)
