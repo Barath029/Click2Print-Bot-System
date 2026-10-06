@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "description": "SmartPrint: Institutional Print Queue Automation & Rack Logistics System",
   "scripts": {
-    "build": "node ./node_modules/typescript/lib/tsc.js",
+    "build": "node ./node_modules/typescript/lib/tsc.js && node scripts/copy-admin.js",
     "watch": "tsc --watch",
-    "dev": "node ./node_modules/typescript/lib/tsc.js && node scripts/dev-server.js"
+    "dev": "node ./node_modules/typescript/lib/tsc.js && node scripts/copy-admin.js && node scripts/dev-server.js"
   },
   "keywords": [
     "smartprint",
