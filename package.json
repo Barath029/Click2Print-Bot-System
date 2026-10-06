@@ -4,7 +4,7 @@
   "description": "SmartPrint: Institutional Print Queue Automation & Rack Logistics System",
   "main": "server.js",
   "scripts": {
-    "build": "tsc",
+    "build": "node ./node_modules/typescript/lib/tsc.js",
     "watch": "tsc --watch",
     "dev": "tsc && node server.js",
     "start": "node server.js"
@@ -19,6 +19,6 @@
   "author": "SmartPrint Team",
   "license": "MIT",
   "devDependencies": {
-    "typescript": "^7.0.2"
+    "typescript": "^5.8.2"
   }
 }
